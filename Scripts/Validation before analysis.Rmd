@@ -4,6 +4,12 @@ author: 'Student ID: 52533934'
 date: "2026-06-21"
 output: html_document
 ---
+```{r}
+```
+
+
+```{r}
+```
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
@@ -12,15 +18,20 @@ knitr::opts_chunk$set(echo = TRUE)
 ```{r}
 library(tidyverse)
 library(readODS)
+library(here)
 ```
  ##
- 
 ```{r}
-scores_WIMD <- read_ods(
-  "data/raw/wimd-2025-index-and-domain-scores-by-small-area.ods",
-  sheet = "Data",
-  skip = 3
-)
+cat("Project root:", here(), "\n")
 ```
  
+ 
+
+```{r}
+ranks_WIMD<- read_csv(
+  "data/raw/wimd-2025-ranks.csv",   # your StatsWales CSV filename
+  show_col_types = FALSE
+)
+```
+
 
