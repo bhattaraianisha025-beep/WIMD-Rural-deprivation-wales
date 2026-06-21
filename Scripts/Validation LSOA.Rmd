@@ -1,0 +1,40 @@
+---
+title: "Validation LSOA"
+author: 'Student ID: 52533934'
+date: "2026-06-21"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+library(readODS)
+library(janitor)
+```
+
+
+```{r}
+cat("Libraries loaded\n")
+cat("Working directory:", getwd(), "\n")
+cat("Files in data/raw:\n")
+print(list.files("data/raw"))
+```
+
+
+```{r}
+ranks_WIMD <- read_ods(
+  "data/raw/wimd-2025-index-and-domain-ranks-by-small-area.ods",
+  sheet = "WIMD_2025_ranks",
+  skip = 2
+) %>% clean_names()
+cat("1. Ranks loaded:", nrow(ranks_raw), "rows x", ncol(ranks_raw), "columns\n")
+```
+
+
+```{r}
+
+```
+
