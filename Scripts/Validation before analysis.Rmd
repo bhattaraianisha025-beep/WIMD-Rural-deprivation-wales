@@ -1,0 +1,26 @@
+---
+title: "Validation LSOA structure"
+author: 'Student ID: 52533934'
+date: "2026-06-21"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+library(readODS)
+```
+ ##
+ 
+```{r}
+scores_WIMD <- read_ods(
+  "data/raw/wimd-2025-index-and-domain-scores-by-small-area.ods",
+  sheet = "Data",
+  skip = 3
+)
+```
+ 
+
