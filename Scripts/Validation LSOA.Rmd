@@ -25,16 +25,109 @@ print(list.files("data/raw"))
 
 
 ```{r}
-ranks_WIMD <- read_ods(
-  "data/raw/wimd-2025-index-and-domain-ranks-by-small-area.ods",
+ranks_raw <- read_ods(
+  "../data/raw/wimd-2025-index-and-domain-ranks-by-small-area.ods",
   sheet = "WIMD_2025_ranks",
   skip = 2
+)
+```
+#
+
+
+```{r}
+scores_WIMD <- read_ods(
+  "../data/raw/wimd-2025-index-and-domain-scores-by-small-area.ods",
+  sheet = "Data",
+  skip = 3
+)
+```
+##
+
+```{r}
+drd_WIMD <- read_ods(
+  "../data/raw/welsh-index-of-multiple-deprivation-wimd-2025-data-underlying-deep-dooted-deprivation-analysis.ods",
+  sheet = "Data",
+  skip = 4
+)
+```
+```{r}
+ruc_files <- list.files("../data/raw", pattern = "Rural", full.names = TRUE)
+ruc_files
+```
+```{r}
+ruc_WIMD <- read_csv(ruc_files[1], show_col_types = FALSE) %>% clean_names()
+```
+
+```{r}
+ruc_lsoa_col <- names(ruc_WIMD)[1]
+ruc_wales <- ruc_WIMD %>% filter(str_starts(.data[[ruc_lsoa_col]], "W"))
+cat("Welsh LSOAs in RUC:", nrow(ruc_wales), "\n")
+head(ruc_wales, 3)
+```
+
+```{r}
+groups_data_WIMD <- read_ods(
+  "../data/raw/wimd-2025-index-and-domain-ranks-by-small-area.ods",
+  sheet = "Deciles_quintiles_quartiles",
+  skip = 3
 ) %>% clean_names()
-cat("1. Ranks loaded:", nrow(ranks_raw), "rows x", ncol(ranks_raw), "columns\n")
+
+cat("Groups:", nrow(groups_data_WIMD), "rows x", ncol(groups_data_WIMD), "columns\n")
+head(groups_data_WIMD, 3)
 ```
 
 
 ```{r}
+ranks_lsoas <- unique(ranks_raw[[1]])
+scores_lsoas <- unique(scores_WIMD[[1]])
+drd_lsoas <- unique(drd_WIMD[[3]][str_starts(drd_WIMD[[3]], "W01")])
+ruc_lsoas <- unique(ruc_wales[[1]])
+groups_lsoas <- unique(groups_data_WIMD[[1]])
 
+cat("Ranks: ", length(ranks_lsoas), "\n")
+cat("Scores:", length(scores_lsoas), "\n")
+cat("DRD:   ", length(drd_lsoas), "\n")
+cat("RUC:   ", length(ruc_lsoas), "\n")
+cat("Groups:", length(groups_lsoas), "\n")
+cat("\nAll should be 1917\n")
+```
+
+```{r}
+cat("Ranks vs RUC mismatch:", length(setdiff(ranks_lsoas, ruc_lsoas)), "\n")
+cat("Scores vs RUC mismatch:", length(setdiff(scores_lsoas, ruc_lsoas)), "\n")
+cat("DRD vs RUC mismatch:", length(setdiff(drd_lsoas, ruc_lsoas)), "\n")
+cat("\nAll should be 0\n")
+```
+
+
+```{r}
+ranks_raw[[1]] <- str_trim(ranks_raw[[1]])
+scores_WIMD[[1]] <- str_trim(scores_WIMD[[1]])
+drd_WIMD[[3]] <- str_trim(drd_WIMD[[3]])
+ruc_wales[[1]] <- str_trim(ruc_wales[[1]])
+```
+
+
+```{r}
+ranks_raw <- ranks_raw %>% filter(!is.na(ranks_raw[[1]]))
+scores_WIMD <- scores_WIMD %>% filter(!is.na(scores_WIMD[[1]]))
+drd_WIMD <- drd_WIMD %>% filter(!is.na(drd_WIMD[[3]]))
+```
+
+
+```{r}
+ranks_raw <- ranks_raw %>% mutate(across(4:12, as.numeric))
+scores_WIMD <- scores_WIMD %>% mutate(across(4:12, as.numeric))
+drd_WIMD <- drd_WIMD %>% mutate(across(5:10, ~as.numeric(str_remove_all(.x, "[^0-9]"))))
+```
+
+
+```{r}
+cat("Duplicates:", sum(duplicated(ranks_raw[[1]])), sum(duplicated(scores_WIMD[[1]])), 
+    sum(duplicated(drd_WIMD[[3]])), sum(duplicated(ruc_wales[[1]])), "\n")
+cat("NAs in ranks:", sum(is.na(ranks_raw[4:12])), "\n")
+cat("NAs in scores:", sum(is.na(scores_WIMD[4:12])), "\n")
+cat("NAs in DRD:", sum(is.na(drd_WIMD[5:10])), "\n")
+cat("Rows:", nrow(ranks_raw), nrow(scores_WIMD), nrow(drd_WIMD), nrow(ruc_wales), "\n")
 ```
 
