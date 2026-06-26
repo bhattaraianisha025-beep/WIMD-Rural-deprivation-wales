@@ -1,0 +1,40 @@
+---
+title: "Explore WIMD rank data"
+author: 'Student ID: 52533934'
+date: "2026-06-26"
+output: html_document
+---
+
+
+```{r setup, include=FALSE, message= FALSE, warning=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+
+```{r load packages}
+library(tidyverse)
+library(readODS)
+library(janitor)
+
+```
+
+
+```{r read data}
+ranks <- read_ods("../data/raw/wimd-2025-index-and-domain-ranks-by-small-area.ods",
+           sheet = "WIMD_2025_ranks", skip = 2) %>% clean_names()
+ranks <- ranks %>% mutate(across(4:12, as.numeric))
+ranks <- ranks %>% filter(!is.na(ranks[[1]]))
+cat("Loaded:", nrow(ranks), "rows |", ncol(ranks), "columns\n")
+names(ranks)
+
+
+```
+
+
+```{r}
+colSums(is.na(ranks[4:12]))
+round(cor(ranks[4:12],use = "complete.obs"),2)
+```
+
