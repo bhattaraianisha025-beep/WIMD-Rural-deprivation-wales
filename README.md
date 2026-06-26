@@ -13,10 +13,10 @@ This project evaluates whether the Welsh Index of Multiple Deprivation (WIMD) 20
 
 - **Student:** Anisha Bhattarai
 - **Organisation:** [Rural Health Compass (RHC)](https://ruralhealthcompass.com/)
-- **Supervisor:** Dr Veronika Rasic
+- **Host Supervisor:** Dr Veronika Rasic
 - **University:** University of Aberdeen — MSc Health Data Science
-- **Course:** PU5926/7 Professional Placement in Health Data Science
-- **Period:** 10 June – 22 August 2026
+- **Course:** PU5926 Professional Placement in Health Data Science
+- **Period:** 15 June – 27 August 2026
 
 ## Team Context
 
@@ -39,38 +39,6 @@ All data used in this project is publicly available, aggregate-level (LSOA), and
 | WIMD 2025 Deep Rooted Deprivation | [Welsh Government](https://www.gov.wales/welsh-index-multiple-deprivation-2025) | 1,917 LSOAs | ODS |
 | ONS Rural Urban Classification 2021 | [ONS Open Geography Portal](https://geoportal.statistics.gov.uk/) | 1,917 Welsh LSOAs | CSV |
 
-## Repository Structure
-
-```
-├── README.md                  
-├── LICENSE                     
-├── .gitignore                 
-│
-├── data/
-│   ├── raw/                   # Original downloaded files (not tracked by git)
-│   └── processed/             # Cleaned and joined datasets
-│
-├── scripts/
-│   ├── 01_explore_wimd_ranks.R
-│   ├── 02_explore_wimd_scores.R
-│   ├── 03_explore_deep_rooted_deprivation.R
-│   ├── 04_explore_ruc.R
-│   ├── 05_build_master_dataset.R
-│   ├── 06_rural_urban_domain_comparison.R
-│   ├── 07_deep_rooted_deprivation_analysis.R
-│   ├── 08_pretty_poverty_mapping.R
-│   └── 09_case_study_areas.R
-│
-├── output/
-│   ├── tables/                # Summary statistics and comparison tables
-│   ├── figures/               # Charts and visualisations
-│   └── maps/                  # Spatial visualisations (if applicable)
-│
-└── docs/
-    ├── assessment2/           # Data handling write-up
-    ├── assessment3/           # Analysis write-up
-    └── assessment4/           # Policy communication write-up
-```
 
 ## Methodology
 
@@ -107,8 +75,5 @@ This project uses only publicly available, aggregate LSOA-level data. No individ
 
 ## Licence and Copyright
 
-All written materials, code and creative work produced during this placement are the intellectual property of Rural Health Compass (RHC) as per the placement copyright agreement. RHC retains the right to use, share and modify these materials. The student's contribution is acknowledged.
-
-This repository is **private**. Access is restricted to the student, RHC supervisor, and University of Aberdeen course staff for the purposes of placement supervision and academic assessment.
-
-The underlying datasets used in this project are publicly available under their respective open licences (Open Government Licence for Welsh Government data; ONS Open Geography Licence for ONS data). RHC's copyright applies to the analysis, code and outputs — not to the source data.
+All datasets are publicly available under open licences (Open Government Licence, ONS Open Geography). Analytical code and outputs are version-controlled via a GitHub private repository, allowing RHC, the University to reuse and build on the work for educational and policy purposes; 
+authorship remains attributable to the student, with sources acknowledged. Safeguards include documenting licence terms and ensuring no re-identification from small-area statistics.
