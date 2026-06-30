@@ -1,0 +1,34 @@
+---
+title: "WIMD 2025 Access data explore"
+author: 'Student ID: 52533934'
+date: "2026-06-30"
+output: html_document
+---
+
+```{r setup, message=FALSE, warning=FALSE}
+library(tidyverse)
+library(janitor)
+library(readODS)
+```
+
+```{r}
+scores <- read_ods(
+  "../data/raw/wimd-2025-index-and-domain-scores-by-small-area.ods",
+  sheet = "Data",
+  skip  = 3
+) %>%
+  clean_names() %>%
+  mutate(across(4:12, as.numeric)) %>%
+  filter(!is.na(.[[1]]))
+
+cat("Loaded:", nrow(scores), "rows |", ncol(scores), "columns\n")
+cat("Column names:\n")
+print(names(scores))
+
+```
+
+```{r}
+scores  %>%
+  pivot
+```
+
