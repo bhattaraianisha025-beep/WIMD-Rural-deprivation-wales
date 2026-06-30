@@ -1,0 +1,145 @@
+---
+title: "explore drd"
+author: 'Student ID: 52533934'
+date: "2026-06-30"
+output: html_document
+---
+
+```{r setup,message=FALSE,warning=FALSE}
+library(tidyverse)
+library(janitor)
+library(readODS)
+
+```
+
+
+```{r}
+drd_WIMD <- read_ods(
+  "../data/raw/welsh-index-of-multiple-deprivation-wimd-2025-data-underlying-deep-dooted-deprivation-analysis.ods",
+  sheet = "Data",
+  skip = 4)%>% 
+  clean_names() %>%
+  filter(!is.na(.[[3]]))
+cat("Loaded:", nrow(drd_WIMD), "rows |", ncol(drd_WIMD), "columns\n")
+cat("Column names:\n")
+print(names(drd_WIMD))
+```
+
+```{r}
+drd_WIMD%>% count(category_of_deep_rooted_deprivation, sort = TRUE)
+```
+
+```{r}
+drd_WIMD %>%
+  filter(category_of_deep_rooted_deprivation != "LSOAs never ranked in top 50 most deprived") %>%
+  count(local_authority, category_of_deep_rooted_deprivation) %>%
+  pivot_wider(
+    names_from  = category_of_deep_rooted_deprivation,
+    values_from = n,
+    values_fill = 0
+  )
+
+```
+
+```{r}
+ranks_cols<- names(drd_WIMD)[5:10]
+drd_WIMD <- drd_WIMD%>%
+  mutate(across(all_of(ranks_cols),~as.numeric(str_remove_all(as.character(.x),"[^0-9]"))
+))
+```
+
+```{r}
+cat("Suppressed/missing values per rank column:\n")
+colSums(is.na(drd_WIMD[ranks_cols]))
+```
+
+```{r}
+rank_cols <- c("wimd_2019_rank", "wimd_2014_rank", "wimd_2011_rank",
+               "wimd_2008_rank", "wimd_2005_rank")
+
+
+    
+```
+
+```{r}
+for (col in rank_cols) {
+  cat("\n===", col, "- suppressed LSOAs ===\n")
+  missing_rows <- drd_WIMD[drd_WIMD[[col]] == "[x]", ]
+  cat("Count:", nrow(missing_rows), "\n")
+  print(missing_rows$lower_layer_super_output_area_lsoa)
+}
+```
+
+```{r}
+suppressed_2019 <- drd_WIMD$lower_layer_super_output_area_lsoa[drd_WIMD$wimd_2019_rank == "[x]"]
+suppressed_2011 <- drd_WIMD$lower_layer_super_output_area_lsoa[drd_WIMD$wimd_2011_rank == "[x]"]
+suppressed_2005 <- drd_WIMD$lower_layer_super_output_area_lsoa[drd_WIMD$wimd_2005_rank == "[x]"]
+cat("2019 suppressed all in 2011 suppressed?", all(suppressed_2019 %in% suppressed_2011), "\n")
+
+cat("\nIn 2011 but not 2019 (boundary additions):\n")
+print(setdiff(suppressed_2011, suppressed_2019))
+```
+
+
+```{r}
+drd_WIMD <- drd_WIMD %>%
+  mutate(change_2019_to_2025 = wimd_2025_rank - wimd_2019_rank)
+
+cat("Median change:", median(drd_WIMD$change_2019_to_2025, na.rm = TRUE), "\n")
+cat("Range:", range(drd_WIMD$change_2019_to_2025, na.rm = TRUE), "\n")
+
+```
+
+```{r fig.width=8, fig.height=5}
+ggplot(drd_WIMD, aes(x = change_2019_to_2025)) +
+  geom_histogram(bins = 50, fill = "steelblue", colour = "white", linewidth = 0.2) +
+  geom_vline(xintercept = 0, colour = "red", linetype = "dashed") +
+  labs(
+    title    = "Rank Change: WIMD 2019 to WIMD 2025",
+    subtitle = "Context only — not interpreted as deprivation trend (WG methodology warning applies)",
+    x        = "Change in overall rank (positive = higher rank number = less deprived in 2025)",
+    y        = "Count"
+  ) +
+  theme_minimal()
+
+
+```
+
+```{r}
+rank_cols <- c("wimd_2025_rank", "wimd_2019_rank", "wimd_2014_rank",
+               "wimd_2011_rank", "wimd_2008_rank", "wimd_2005_rank")
+
+drd_WIMD <- drd_WIMD %>%
+  rowwise() %>%
+  mutate(rank_sd = sd(c_across(all_of(rank_cols)), na.rm = TRUE)) %>%
+  ungroup()
+
+cat("Volatility summary (SD of WIMD ranks across all available iterations):\n")
+summary(drd_WIMD$rank_sd)
+
+```
+
+```{r}
+drd_WIMD %>%
+  arrange(desc(rank_sd)) %>%
+  select(local_authority, lower_layer_super_output_area_lsoa, rank_sd) %>%
+  head(10)
+
+```
+```{r}
+drd_WIMD %>%
+  arrange(rank_sd) %>%
+  select(local_authority, lower_layer_super_output_area_lsoa, rank_sd) %>%
+  head(10)
+
+```
+
+```{r}
+drd_WIMD %>%
+  arrange(rank_sd) %>%
+  select(local_authority, lower_layer_super_output_area_lsoa,
+         category_of_deep_rooted_deprivation, rank_sd) %>%
+  head(10)
+
+```
+
