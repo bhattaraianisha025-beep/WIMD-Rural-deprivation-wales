@@ -29,6 +29,70 @@ print(names(scores))
 
 ```{r}
 scores  %>%
-  pivot
+  pivot_longer(4:12, names_to = "domain",values_to = "score") %>%
+  group_by(domain)%>%
+  summarise(
+    min = round(min(score, na.rm = TRUE),1),
+    median = round(median(score, na.rm = TRUE),1),
+    mean = round(mean(score, na.rm = TRUE),1),
+    max = round(max(score, na.rm = TRUE),1),
+    sd = round(sd(score, na.rm = TRUE),1),
+    .groups = "drop"
+  ) %>%
+  arrange(desc(max))
+```
+```{r fig.width=10, fig.height=8}
+scores  %>%
+  pivot_longer(4:12, names_to = "domain",values_to = "score") %>%
+  ggplot(aes(x=score))+
+  geom_histogram(bins = 40, fill ="steelblue", colour = "white", linewidth = 0.2)+
+  facet_wrap(~domain, scales = "free")+
+  labs(
+    title = "WIMD 2025 score distribution by domain",
+    subtitle = "higher score= more deprived. note:scales differ across domains.",
+    x = "Score", y = "Count"
+  )+
+  theme_minimal(
+  )
+  
+```
+
+
+
+
+
+```{r}
+lsoa_col   <- names(scores)[1]   
+domain_cols <- names(scores)[5:12]  
+
+scores %>%
+  pivot_longer(all_of(domain_cols), names_to = "domain", values_to = "score") %>%
+  group_by(.data[[lsoa_col]]) %>%
+  slice_max(score, n = 1, with_ties = FALSE) %>%
+  ungroup() %>%
+  count(domain, sort = TRUE) %>%
+  mutate(pct = round(100 * n / sum(n), 1))
+
+```
+
+```{r}
+round(cor(scores[4:12], use = "complete.obs"), 2)
+```
+
+
+```{r}
+scores %>%
+  group_by(local_authority_name) %>%
+  summarise(
+    n            = n(),
+    mean_overall = round(mean(wimd_2025,          na.rm = TRUE), 1),
+    mean_access  = round(mean(access_to_services, na.rm = TRUE), 1),
+    mean_housing = round(mean(housing,            na.rm = TRUE), 1),
+    .groups = "drop"
+  ) %>%
+  arrange(desc(mean_access)) %>%
+  print(n = 22)
+
+
 ```
 
