@@ -1,0 +1,108 @@
+---
+title: "explore RUC"
+author: 'Student ID: 52533934'
+date: "2026-06-30"
+output: html_document
+---
+
+```{r setup, message=FALSE, warning=FALSE}
+library(tidyverse)
+library(readODS)
+library(janitor)
+```
+
+```{r}
+ruc_files <- list.files("../data/raw", pattern = "Rural", full.names = TRUE)
+ruc_files
+```
+```{r}
+ruc_WIMD <- read_csv(ruc_files[1], show_col_types = FALSE) %>% clean_names()
+```
+
+```{r}
+ruc_lsoa_col <- names(ruc_WIMD)[1]
+ruc_wales <- ruc_WIMD %>% filter(str_starts(.data[[ruc_lsoa_col]], "W"))
+cat("Welsh LSOAs in RUC:", nrow(ruc_wales), "\n")
+head(ruc_wales, 3)
+```
+
+```{r}
+ruc_wales %>%
+  count(urban_rural_flag) %>%
+  mutate(pct = round(100 * n / sum(n), 1))
+```
+
+```{r}
+ruc_wales %>%
+  count(ruc21nm, urban_rural_flag) %>%
+  arrange(urban_rural_flag, desc(n))
+```
+
+```{r}
+ranks <- read_ods(
+  "../data/raw/wimd-2025-index-and-domain-ranks-by-small-area.ods",
+  sheet = "WIMD_2025_ranks",
+  skip  = 2
+) %>%
+  clean_names() %>%
+  select(where(~!all(is.na(.)))) %>%   
+  select(lsoa_code, local_authority_name_eng)
+
+ruc_la <- ruc_wales %>%
+  left_join(ranks, by = c("lsoa21cd" = "lsoa_code"))
+
+ruc_la %>%
+  group_by(local_authority_name_eng) %>%
+  summarise(
+    total     = n(),
+    rural     = sum(urban_rural_flag == "Rural"),
+    pct_rural = round(100 * rural / total, 1),
+    .groups   = "drop"
+  ) %>%
+  arrange(desc(pct_rural)) %>%
+  print(n = 22)
+```
+
+```{r}
+ruc_la %>%
+  filter(local_authority_name_eng %in% c("Powys", "Ceredigion", "Pembrokeshire", "Swansea")) %>%
+  count(local_authority_name_eng, ruc21nm) %>%
+  pivot_wider(
+    names_from  = local_authority_name_eng,
+    values_from = n,
+    values_fill = 0
+  )
+```
+
+```{r}
+ruc_wales %>%
+  count(ruc21nm) %>%
+  mutate(
+    ruc21nm    = fct_reorder(ruc21nm, n),
+    is_rural   = str_detect(ruc21nm, "rural")
+  ) %>%
+  ggplot(aes(x = n, y = ruc21nm, fill = is_rural)) +
+  geom_col() +
+  scale_fill_manual(
+    values = c("TRUE" = "#2ca25f", "FALSE" = "#636363"),
+    labels = c("Urban", "Rural"),
+    name   = ""
+  ) +
+  labs(
+    title    = "Welsh LSOAs by Rural-Urban Classification (2021)",
+    subtitle = "1,917 Welsh LSOAs total",
+    x        = "Number of LSOAs",
+    y        = NULL
+  ) +
+  theme_minimal()
+```
+
+
+```{r}
+ruc_wales %>%
+  filter(urban_rural_flag == "Rural") %>%
+  mutate(remoteness = if_else(str_detect(ruc21nm, "Further"), "Further from town", "Nearer to town")) %>%
+  count(remoteness) %>%
+  mutate(pct = round(100 * n / sum(n), 1))
+```
+
