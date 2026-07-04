@@ -1,0 +1,153 @@
+---
+title: "Rural urban comparision"
+author: 'Student ID: 52533934'
+date: "2026-07-02"
+output: html_document
+---
+
+```{r setup, message=FALSE, warning=FALSE}
+library(tidyverse)
+library(janitor)
+```
+
+
+```{r}
+master<- read_csv("../data/processed/master_dataset.csv") %>%
+  mutate(rural_urban = factor(rural_urban, levels = c("Rural","Urban")))
+cat("Rows:", nrow(master),"| Rural:", sum(master$rural_urban == "Rural"),
+    "| Urban:", sum(master$rural_urban == "Urban"), "\n")
+
+```
+
+```{r}
+domain_cols <- c("wimd_2025_rank", "income_rank", "employment_rank",
+                 "health_rank", "education_rank", "access_rank",
+                 "housing_rank", "community_safety_rank", "physical_env_rank")
+
+master %>%
+  group_by(rural_urban) %>%
+  summarise(across(all_of(domain_cols), ~median(.x, na.rm = TRUE)),
+            .groups = "drop")
+
+```
+
+
+```{r}
+rural <- master %>% filter(rural_urban == "Rural")
+urban <- master %>% filter(rural_urban == "Urban")
+
+results <- map_dfr(domain_cols, function(col) {
+  r <- rural[[col]]
+  u <- urban[[col]]
+
+  test     <- wilcox.test(r, u, alternative = "two.sided", exact = FALSE)
+  z        <- qnorm(test$p.value / 2)
+  effect_r <- abs(z) / sqrt(length(r) + length(u))
+
+  tibble(
+    domain       = col,
+    rural_median = median(r, na.rm = TRUE),
+    urban_median = median(u, na.rm = TRUE),
+    p_value      = round(test$p.value, 4),
+    effect_r     = round(effect_r, 3),
+    rural_worse  = median(r, na.rm = TRUE) < median(u, na.rm = TRUE)
+  )
+}) %>%
+  arrange(desc(effect_r))
+
+print(results)
+
+```
+
+```{r}
+master %>%
+  group_by(rural_urban) %>%
+  summarise(
+    n            = n(),
+    mean_gap     = round(mean(access_rank_gap,   na.rm = TRUE), 0),
+    median_gap   = round(median(access_rank_gap, na.rm = TRUE), 0),
+    pct_negative = round(100 * mean(access_rank_gap < 0, na.rm = TRUE), 1),
+    .groups = "drop"
+  )
+
+```
+
+```{r}
+weights <- tibble(
+  domain      = c("income_rank", "employment_rank", "health_rank",
+                  "education_rank", "access_rank", "housing_rank",
+                  "community_safety_rank", "physical_env_rank"),
+  wimd_weight = c(22, 20, 15, 14, 10, 9, 5, 5)
+)
+
+mismatch <- results %>%
+  filter(domain != "wimd_2025_rank") %>%
+  left_join(weights, by = "domain") %>%
+  select(domain, wimd_weight, rural_median, urban_median, effect_r, rural_worse) %>%
+  arrange(desc(rural_worse), desc(effect_r))
+
+print(mismatch)
+cat("\n--- Combined WIMD weight by direction ---\n")
+mismatch %>%
+  group_by(rural_worse) %>%
+  summarise(
+    combined_weight = sum(wimd_weight),
+    .groups = "drop"
+  )
+
+```
+
+```{r}
+master %>%
+  group_by(ruc_name) %>%
+  summarise(
+    n               = n(),
+    median_access   = round(median(access_rank, na.rm = TRUE), 0),
+    pct_worst_20pct = round(100 * mean(access_rank <= 383, na.rm = TRUE), 1),
+    .groups = "drop"
+  ) %>%
+  arrange(median_access)
+```
+
+
+```{r}
+domain_labels <- c(
+  wimd_2025_rank        = "WIMD Overall",
+  income_rank           = "Income (22%)",
+  employment_rank       = "Employment (20%)",
+  health_rank           = "Health (15%)",
+  education_rank        = "Education (14%)",
+  access_rank           = "Access (10%)",
+  housing_rank          = "Housing (9%)",
+  community_safety_rank = "Community Safety (5%)",
+  physical_env_rank     = "Physical Env (5%)"
+)
+
+master %>%
+  pivot_longer(all_of(domain_cols), names_to = "domain", values_to = "rank") %>%
+  mutate(domain = factor(domain,
+                         levels = names(domain_labels),
+                         labels = domain_labels)) %>%
+  ggplot(aes(x = rural_urban, y = rank, fill = rural_urban)) +
+  geom_boxplot(alpha = 0.7, outlier.size = 0.3) +
+  scale_fill_manual(values = c("Rural" = "#2ca25f", "Urban" = "#636363")) +
+  facet_wrap(~domain, nrow = 3) +
+  labs(
+    title    = "WIMD 2025 Domain Rank Distributions: Rural vs Urban LSOAs in Wales",
+    subtitle = "Lower rank = more deprived. Access is the only domain where rural LSOAs\nare substantially worse. Domain weights shown in parentheses.",
+    x = NULL, y = "Rank (1 = most deprived)",
+    fill = NULL,
+    caption = "Source: WIMD 2025 (Welsh Government); RUC 2021 (ONS). n = 1,917 Welsh LSOAs."
+  ) +
+  theme_minimal(base_size = 11) +
+  theme(
+    legend.position = "bottom",
+    strip.text      = element_text(face = "bold", size = 9),
+    plot.title      = element_text(face = "bold"),
+    axis.text.x     = element_blank()
+  )
+
+```
+
+```
+

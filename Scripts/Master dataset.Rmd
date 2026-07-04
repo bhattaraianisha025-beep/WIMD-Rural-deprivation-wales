@@ -1,0 +1,254 @@
+---
+title: "Masterdata"
+author: 'Student ID: 52533934'
+date: "2026-07-01"
+output: html_document
+---
+
+```{r setup, message=FALSE, warning=FALSE}
+library(tidyverse)
+library(janitor)
+library(readODS)
+
+```
+
+
+```{r}
+ranks_WIMD <- read_ods(
+  "../data/raw/wimd-2025-index-and-domain-ranks-by-small-area.ods",
+  sheet = "WIMD_2025_ranks",
+  skip  = 2
+) %>%
+  clean_names() %>%
+  select(where(~!all(is.na(.)))) %>%      # drop trailing empty column (col 13)
+  mutate(across(4:12, as.numeric)) %>%
+  filter(!is.na(lsoa_code))
+
+cat("Ranks loaded:", nrow(ranks), "rows |", ncol(ranks), "cols\n")
+
+
+```
+```{r}
+scores_WIMD <- read_ods(
+  "../data/raw/wimd-2025-index-and-domain-scores-by-small-area.ods",
+  sheet = "Data",
+  skip  = 3
+) %>%
+  clean_names() %>%
+  mutate(across(4:12, as.numeric)) %>%
+  filter(!is.na(lsoa_code))
+
+cat("Scores loaded:", nrow(scores), "rows |", ncol(scores), "cols\n")
+
+```
+
+```{r}
+rank_cols_drd <- c("wimd_2025_rank", "wimd_2019_rank", "wimd_2014_rank",
+                   "wimd_2011_rank", "wimd_2008_rank", "wimd_2005_rank")
+
+drd_WIMD <- read_ods(
+  "../data/raw/welsh-index-of-multiple-deprivation-wimd-2025-data-underlying-deep-dooted-deprivation-analysis.ods",
+  sheet = "Data",
+  skip  = 4
+) %>%
+  clean_names() %>%
+  filter(!is.na(lsoa_code)) %>%
+  mutate(across(
+    all_of(rank_cols_drd),
+    ~as.numeric(str_remove_all(as.character(.x), "[^0-9]"))
+    # converts "[x]" suppression markers to NA
+  ))
+
+cat("DRD loaded:", nrow(drd_WIMD), "rows |", ncol(drd_WIMD), "cols\n")
+
+```
+
+```{r}
+ruc_file <- list.files("../data/raw", pattern = "Rural_Urban", full.names = TRUE)
+
+ruc_WIMD <- read_csv(ruc_file[1]) %>%
+  clean_names() %>%
+  filter(str_starts(lsoa21cd, "W"))       # Welsh LSOAs only
+
+cat("RUC loaded:", nrow(ruc_WIMD), "rows |", ncol(ruc_WIMD), "cols\n")
+
+```
+```{r}
+ranks_clean <- ranks_WIMD %>%
+  rename(
+    lsoa_name          = lsoa_name_eng,
+    la_name            = local_authority_name_eng,
+    wimd_2025_rank     = wimd_2025,
+    income_rank        = income,
+    employment_rank    = employment,
+    health_rank        = health,
+    education_rank     = education,
+    access_rank        = access_to_services,
+    housing_rank       = housing,
+    community_safety_rank   = community_safety,
+    physical_env_rank  = physical_environment
+  )
+
+```
+
+
+```{r}
+scores_clean <- scores_WIMD %>%
+  select(-lsoa_name, -local_authority_name) %>%   # already in ranks; avoid duplication
+  rename(
+    wimd_2025_score    = wimd_2025,
+    income_score       = income,
+    employment_score   = employment,
+    health_score       = health,
+    education_score    = education,
+    access_score       = access_to_services,
+    housing_score      = housing,
+    community_safety_score  = community_safety,
+    physical_env_score = physical_environment
+  )
+
+```
+
+
+```{r}
+drd_clean <- drd_WIMD %>%
+  select(
+    lsoa_code,
+    drd_category = category_of_deep_rooted_deprivation,
+    wimd_2019_rank = wimd_2019_rank,
+    wimd_2014_rank = wimd_2014_rank,
+    wimd_2011_rank = wimd_2011_rank,
+    wimd_2008_rank = wimd_2008_rank,
+    wimd_2005_rank = wimd_2005_rank
+    # wimd_2025_rank already in ranks_clean; excluded to avoid duplication
+  )
+
+```
+
+```{r}
+ruc_clean <- ruc_WIMD %>%
+  select(
+    lsoa_code      = lsoa21cd,
+    ruc_code       = ruc21cd,
+    ruc_name       = ruc21nm,
+    rural_urban    = urban_rural_flag
+  )
+
+cat("Column rename done.\n")
+cat("ranks_clean cols:", paste(names(ranks_clean), collapse = ", "), "\n")
+cat("scores_clean cols:", paste(names(scores_clean), collapse = ", "), "\n")
+cat("drd_clean cols:", paste(names(drd_clean), collapse = ", "), "\n")
+cat("ruc_clean cols:", paste(names(ruc_clean), collapse = ", "), "\n")
+
+```
+```{r}
+master <- ranks_clean %>%
+  left_join(scores_clean, by = "lsoa_code") %>%
+  left_join(drd_clean,    by = "lsoa_code") %>%
+  left_join(ruc_clean,    by = "lsoa_code")
+
+cat("Master dataset:", nrow(master), "rows |", ncol(master), "cols\n")
+```
+
+
+```{r}
+cat("Row count:", nrow(master), "(expected 1,917)\n")
+cat("Duplicate LSOA codes:", sum(duplicated(master$lsoa_code)), "(expected 0)\n")
+
+```
+
+```{r}
+na_summary <- colSums(is.na(master))
+cat("\nColumns with missing values:\n")
+print(na_summary[na_summary > 0])
+
+```
+
+```{r}
+cat("\nRural/Urban split in master:\n")
+print(table(master$rural_urban, useNA = "ifany"))
+
+```
+
+```{r}
+cat("\nDRD category distribution in master:\n")
+print(table(master$drd_category, useNA = "ifany"))
+
+```
+
+```{r}
+master <- master %>%
+  mutate(
+    # Access rank discordance: difference between access rank and overall rank
+    # NEGATIVE gap = LSOA is MORE access-deprived than its overall rank suggests
+    # i.e. the LSOA appears less deprived overall than its access situation warrants
+    # In WIMD: rank 1 = most deprived, rank 1917 = least deprived
+    # Rural LSOAs expected to have large NEGATIVE gaps (access rank << overall rank)
+    access_rank_gap = access_rank - wimd_2025_rank,
+
+    # Housing rank discordance: same logic
+    # NEGATIVE gap = LSOA is MORE housing-deprived than its overall rank suggests
+    housing_rank_gap = housing_rank - wimd_2025_rank,
+
+    # DRD category as ordered factor for plotting
+    drd_category = factor(
+      drd_category,
+      levels = c(
+        "LSOAs never ranked in top 50 most deprived",
+        "LSOAs sometimes in the top 50 most deprived",
+        "LSOAs often in the top 50 most deprived",
+        "LSOAs in Deep-rooted deprivation"
+      ),
+      ordered = TRUE
+    ),
+
+    # Rural/urban as factor
+    rural_urban = factor(rural_urban, levels = c("Rural", "Urban"))
+  )
+
+cat("Derived variables added.\n")
+cat("access_rank_gap range:", range(master$access_rank_gap, na.rm = TRUE), "\n")
+cat("housing_rank_gap range:", range(master$housing_rank_gap, na.rm = TRUE), "\n")
+
+```
+```{r}
+glimpse(master)
+```
+
+```{r}
+master %>%
+  group_by(rural_urban) %>%
+  summarise(
+    n                     = n(),
+    median_overall_rank   = median(wimd_2025_rank,   na.rm = TRUE),
+    median_income_rank    = median(income_rank,       na.rm = TRUE),
+    median_employment_rank= median(employment_rank,   na.rm = TRUE),
+    median_access_rank    = median(access_rank,       na.rm = TRUE),
+    median_housing_rank   = median(housing_rank,      na.rm = TRUE),
+    median_health_rank    = median(health_rank,       na.rm = TRUE),
+    .groups = "drop"
+  )
+
+```
+
+```{r}
+master %>%
+  filter(la_name %in% c("Powys", "Ceredigion", "Pembrokeshire", "Swansea")) %>%
+  group_by(la_name, rural_urban) %>%
+  summarise(
+    n                   = n(),
+    median_overall_rank = median(wimd_2025_rank, na.rm = TRUE),
+    median_access_rank  = median(access_rank,    na.rm = TRUE),
+    median_housing_rank = median(housing_rank,   na.rm = TRUE),
+    .groups = "drop"
+  ) %>%
+  arrange(la_name)
+
+```
+```{r}
+write_csv(master, "../data/processed/master_dataset.csv")
+cat("Master dataset saved to ../data/processed/master_dataset.csv\n")
+cat("Final dimensions:", nrow(master), "rows |", ncol(master), "cols\n")
+
+```
+
