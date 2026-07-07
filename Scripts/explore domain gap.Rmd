@@ -1,0 +1,27 @@
+---
+title: "Domain gap"
+author: 'Student ID: 52533934'
+date: "2026-07-07"
+output: html_document
+---
+
+```{r setup, message=FALSE, warning=FALSE}
+library(tidyverse)
+library(janitor)
+
+```
+
+
+```{r}
+master<- read_csv("../data/processed/master_dataset.csv")
+mutate(rural_urban = factor(rural_urban, levels = c("Rural", "Urban")))
+
+rural <- master %>% filter(rural_urban == "Rural")
+urban <- master %>% filter(rural_urban == "Urban")
+
+cat("Master loaded:", nrow(master), "rows\n")
+cat("Rural:", nrow(rural), "| Urban:", nrow(urban), "\n")
+```
+
+```
+
