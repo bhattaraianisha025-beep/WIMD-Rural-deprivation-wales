@@ -1,0 +1,144 @@
+---
+title: "case study"
+author: 'Student ID: 52533934'
+date: "2026-07-07"
+output: html_document
+---
+
+```{r setup, message=FALSE, warning=FALSE}
+library(tidyverse)
+library(janitor)
+
+
+```
+
+
+```{r}
+master <- read_csv("../data/processed/master_dataset.csv") %>%
+  mutate(rural_urban = factor(rural_urban, levels = c("Rural", "Urban")))
+
+case_las <- c("Powys","Ceredigion","Pembrokeshire","Swansea")
+
+```
+```{r domain_table}
+# Percent of LSOAs in worst 20% per domain
+domain_cols <- c("wimd_2025_rank", "income_rank", "employment_rank",
+                 "health_rank", "education_rank", "access_rank",
+                 "housing_rank", "community_safety_rank", "physical_env_rank")
+
+domain_labels <- c("WIMD Overall", "Income (22%)", "Employment (20%)",
+                   "Health (15%)", "Education (14%)", "Access (10%)",
+                   "Housing (9%)", "Community Safety (5%)", "Physical Env (5%)")
+
+master %>%
+  filter(la_name %in% case_las) %>%
+  group_by(la_name) %>%
+  summarise(across(all_of(domain_cols),
+                   ~round(100 * mean(.x <= 383, na.rm=TRUE), 1)),
+            .groups = "drop") %>%
+  pivot_longer(-la_name, names_to="Domain", values_to="pct") %>%
+  mutate(Domain = factor(Domain, levels=domain_cols, labels=domain_labels)) %>%
+  pivot_wider(names_from=la_name, values_from=pct) %>%
+  arrange(Domain)
+
+
+```
+
+```{r access_overall_gap}
+# access overall gap,how hidden is accessdeprivation
+master %>%
+  filter(la_name %in% case_las) %>%
+  group_by(la_name) %>%
+   summarise(
+    n                   = n(),
+    pct_worst20_overall = round(100 * mean(wimd_2025_rank <= 383), 1),
+    pct_worst20_access  = round(100 * mean(access_rank    <= 383), 1),
+    pct_worst20_housing = round(100 * mean(housing_rank   <= 383), 1),
+    gap_access_overall  = round(pct_worst20_access - pct_worst20_overall, 1),
+    .groups = "drop"
+  ) %>%
+  arrange(desc(gap_access_overall))
+
+```
+
+```{r aberystwyth}
+# internal contrast within ceredigion
+master %>%
+  filter(la_name == "Ceredigion") %>%
+  mutate(area_type = case_when(
+    str_detect(lsoa_name, "Aberystwyth") ~ "Aberystwyth (Urban)",
+    rural_urban == "Rural"               ~ "Rural Ceredigion",
+    TRUE                                 ~ "Other Urban Ceredigion"
+  )) %>%
+  group_by(area_type) %>%
+  summarise(
+    n                   = n(),
+    median_overall_rank = median(wimd_2025_rank, na.rm=TRUE),
+    median_access_rank  = median(access_rank,    na.rm=TRUE),
+    pct_worst20_access  = round(100 * mean(access_rank <= 383), 1),
+    .groups = "drop"
+  )
+
+
+```
+
+
+```{r dual_deprivation}
+# Rural LSOAs in worst 20% on both access and housing
+dual_deprived <- master %>%
+  filter(
+    rural_urban  == "Rural",
+    access_rank  <= 383,
+    housing_rank <= 383
+  )
+
+cat("Dual deprived rural LSOAs:", nrow(dual_deprived), "\n")
+cat("% in worst 20% OVERALL:", round(100 * mean(dual_deprived$wimd_2025_rank <= 383), 1), "%\n")
+cat("Median overall rank:", median(dual_deprived$wimd_2025_rank), "\n")
+
+dual_deprived %>% count(la_name, sort=TRUE) %>%
+  mutate(pct_of_total = round(100 * n / nrow(dual_deprived), 1))
+
+
+```
+
+```{r rural_urban_within_la}
+master %>%
+  filter(la_name %in% case_las) %>%
+  group_by(la_name, rural_urban) %>%
+  summarise(
+    n                   = n(),
+    pct_worst20_overall = round(100 * mean(wimd_2025_rank <= 383), 1),
+    pct_worst20_access  = round(100 * mean(access_rank    <= 383), 1),
+    pct_worst20_housing = round(100 * mean(housing_rank   <= 383), 1),
+    pct_worst20_income  = round(100 * mean(income_rank    <= 383), 1),
+    .groups = "drop"
+  ) %>% arrange(la_name, rural_urban)
+
+
+```
+
+```{r}
+# 190 structurally invisible rural LSOA
+invisible_lsoas <- master %>%
+  filter(rural_urban    == "Rural",
+         access_rank    <= 192,
+         wimd_2025_rank >  50) %>%
+  arrange(access_rank_gap) %>%
+  select(lsoa_name, la_name, wimd_2025_rank, access_rank, access_rank_gap)
+
+# Top 20 most severely invisible
+invisible_lsoas %>% slice_head(n = 20)
+
+```
+
+
+```{r invisible_la_summary}
+# areas most invisible communities
+invisible_lsoas %>%
+  count(la_name, sort=TRUE) %>%
+  mutate(pct_of_total = round(100 * n / nrow(invisible_lsoas), 1))
+
+
+```
+

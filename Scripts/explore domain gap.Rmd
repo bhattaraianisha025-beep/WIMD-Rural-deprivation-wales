@@ -13,15 +13,169 @@ library(janitor)
 
 
 ```{r}
-master<- read_csv("../data/processed/master_dataset.csv")
+master<- read_csv("../data/processed/master_dataset.csv") %>%
 mutate(rural_urban = factor(rural_urban, levels = c("Rural", "Urban")))
 
 rural <- master %>% filter(rural_urban == "Rural")
 urban <- master %>% filter(rural_urban == "Urban")
 
-cat("Master loaded:", nrow(master), "rows\n")
-cat("Rural:", nrow(rural), "| Urban:", nrow(urban), "\n")
 ```
+
+
+```{r domain_summary}
+# % of LSOAs in worst 20% by domain, rural vs urban
+domain_cols <- c("income_rank","employment_rank","health_rank","education_rank",
+                 "access_rank","housing_rank","community_safety_rank","physical_env_rank")
+weights <- c(22,20,15,14,10,9,5,5)
+
+map2_dfr(domain_cols, weights, function(col, w) {
+  tibble(
+    domain             = col,
+    wimd_weight        = paste0(w, "%"),
+    rural_pct_worst20  = round(100 * mean(rural[[col]] <= 383, na.rm=TRUE), 1),
+    urban_pct_worst20  = round(100 * mean(urban[[col]] <= 383, na.rm=TRUE), 1),
+    rural_median       = median(rural[[col]], na.rm=TRUE),
+    urban_median       = median(urban[[col]], na.rm=TRUE),
+    rural_worse        = median(rural[[col]], na.rm=TRUE) <
+                         median(urban[[col]], na.rm=TRUE)
+  )
+}) %>% arrange(desc(rural_worse), desc(rural_pct_worst20))
+
+```
+
+```{r access_domain}
+master %>%
+  group_by(rural_urban) %>%
+  summarise(
+    n            = n(),
+    median_rank  = median(access_rank, na.rm=TRUE),
+    pct_worst_20 = round(100 * mean(access_rank <= 383, na.rm=TRUE), 1),
+    pct_worst_10 = round(100 * mean(access_rank <= 192, na.rm=TRUE), 1),
+    .groups = "drop"
+  )
+
+```
+
+
+```{r access_invisible}
+master %>%
+  filter(rural_urban == "Rural") %>%
+  mutate(access_group = if_else(access_rank <= 192,
+                                "Worst 10% access", "Not worst 10%")) %>%
+  group_by(access_group) %>%
+  summarise(
+    n                   = n(),
+    median_overall_rank = median(wimd_2025_rank, na.rm=TRUE),
+    median_income_rank  = median(income_rank,    na.rm=TRUE),
+    pct_worst20_overall = round(100 * mean(wimd_2025_rank <= 383), 1),
+    .groups = "drop"
+  )
+
+```
+
+
+
+```{r housing_domain}
+master %>%
+  group_by(rural_urban) %>%
+  summarise(
+    n            = n(),
+    median_rank  = median(housing_rank, na.rm=TRUE),
+    pct_worst_20 = round(100 * mean(housing_rank <= 383, na.rm=TRUE), 1),
+    .groups = "drop"
+  )
+
+
+```
+
+```{r housing_rank_gap}
+
+master %>%
+  group_by(rural_urban) %>%
+  summarise(
+    n                  = n(),
+    median_housing_gap = round(median(housing_rank_gap, na.rm=TRUE), 0),
+    pct_negative       = round(100 * mean(housing_rank_gap < 0, na.rm=TRUE), 1),
+    .groups = "drop"
+  )
+
+```
+
+
+```{r housing_by_la}
+master %>%
+  filter(la_name %in% c("Powys","Ceredigion","Pembrokeshire","Swansea")) %>%
+  group_by(la_name) %>%
+  summarise(
+    n              = n(),
+    pct_worst20    = round(100 * mean(housing_rank <= 383, na.rm=TRUE), 1),
+    median_housing = median(housing_rank, na.rm=TRUE),
+    .groups = "drop"
+  ) %>% arrange(pct_worst20)
+
+
+```
+
+
+```{r income_employment}
+master %>%
+  group_by(rural_urban) %>%
+  summarise(
+    n                      = n(),
+    median_income_rank     = median(income_rank,     na.rm=TRUE),
+    median_employment_rank = median(employment_rank, na.rm=TRUE),
+    pct_worst20_income     = round(100 * mean(income_rank     <= 383, na.rm=TRUE), 1),
+    pct_worst20_employment = round(100 * mean(employment_rank <= 383, na.rm=TRUE), 1),
+    .groups = "drop"
+  )
+
+
+```
+
+
+```{r income_masking}
+cat("Within rural LSOAs — correlation of overall WIMD rank with:\n")
+cat("  Income rank:", round(cor(rural$wimd_2025_rank, rural$income_rank,
+                                use="complete.obs"), 3), "\n")
+cat("  Access rank:", round(cor(rural$wimd_2025_rank, rural$access_rank,
+                                use="complete.obs"), 3), "\n")
+
+
+```
+
+
+```{r remaining_domain}
+map2_dfr(
+  c("health_rank","education_rank","community_safety_rank","physical_env_rank"),
+  c(15, 14, 5, 5),
+  function(col, w) {
+    tibble(
+      domain            = col,
+      wimd_weight       = paste0(w, "%"),
+      rural_median      = median(rural[[col]], na.rm=TRUE),
+      urban_median      = median(urban[[col]], na.rm=TRUE),
+      rural_pct_worst20 = round(100 * mean(rural[[col]] <= 383, na.rm=TRUE), 1),
+      urban_pct_worst20 = round(100 * mean(urban[[col]] <= 383, na.rm=TRUE), 1)
+    )
+  })
+
+```
+
+
+```{r weight_gap_summary}
+tibble(
+  domain      = domain_cols,
+  wimd_weight = weights,
+  rural_worse = c(FALSE,FALSE,FALSE,FALSE,TRUE,TRUE,FALSE,FALSE)
+) %>%
+  group_by(rural_worse) %>%
+  summarise(
+    group           = if_else(first(rural_worse), "Rural more deprived",
+                              "Urban more deprived"),
+    combined_weight = sum(wimd_weight),
+    .groups = "drop"
+  ) %>%
+  select(group, combined_weight)
 
 ```
 

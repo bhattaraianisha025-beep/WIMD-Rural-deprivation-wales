@@ -11,7 +11,7 @@ library(janitor)
 library(readODS)
 ```
 
-```{r}
+```{r read data}
 scores <- read_ods(
   "../data/raw/wimd-2025-index-and-domain-scores-by-small-area.ods",
   sheet = "Data",
@@ -19,51 +19,29 @@ scores <- read_ods(
 ) %>%
   clean_names() %>%
   mutate(across(4:12, as.numeric)) %>%
-  filter(!is.na(.[[1]]))
+  filter(!is.na(lsoa_code))
 
-cat("Loaded:", nrow(scores), "rows |", ncol(scores), "columns\n")
-cat("Column names:\n")
-print(names(scores))
+cat("Loaded:", nrow(scores), "rows |", ncol(scores), "\n")
 
 ```
 
-```{r}
+```{r scores_ranges}
+# all domains are standarised 0-100 range looks same and cannot be discriminated between domain 
 scores  %>%
   pivot_longer(4:12, names_to = "domain",values_to = "score") %>%
   group_by(domain)%>%
   summarise(
     min = round(min(score, na.rm = TRUE),1),
     median = round(median(score, na.rm = TRUE),1),
-    mean = round(mean(score, na.rm = TRUE),1),
     max = round(max(score, na.rm = TRUE),1),
-    sd = round(sd(score, na.rm = TRUE),1),
     .groups = "drop"
-  ) %>%
-  arrange(desc(max))
-```
-```{r fig.width=10, fig.height=8}
-scores  %>%
-  pivot_longer(4:12, names_to = "domain",values_to = "score") %>%
-  ggplot(aes(x=score))+
-  geom_histogram(bins = 40, fill ="steelblue", colour = "white", linewidth = 0.2)+
-  facet_wrap(~domain, scales = "free")+
-  labs(
-    title = "WIMD 2025 score distribution by domain",
-    subtitle = "higher score= more deprived. note:scales differ across domains.",
-    x = "Score", y = "Count"
-  )+
-  theme_minimal(
   )
-  
 ```
-
-
-
-
-
-```{r}
-lsoa_col   <- names(scores)[1]   
-domain_cols <- names(scores)[5:12]  
+```{r worst_score}
+# domain with highest score most deprived per LSOA
+#capture lsoa_col name before pivot for avoiding reference error
+lsoa_col    <- names(scores)[1]
+domain_cols <- names(scores)[5:12]
 
 scores %>%
   pivot_longer(all_of(domain_cols), names_to = "domain", values_to = "score") %>%
@@ -73,26 +51,16 @@ scores %>%
   count(domain, sort = TRUE) %>%
   mutate(pct = round(100 * n / sum(n), 1))
 
+  
 ```
 
-```{r}
+
+
+
+
+```{r score_correlations}
+# score confirm same pattern as rank
 round(cor(scores[4:12], use = "complete.obs"), 2)
-```
-
-
-```{r}
-scores %>%
-  group_by(local_authority_name) %>%
-  summarise(
-    n            = n(),
-    mean_overall = round(mean(wimd_2025,          na.rm = TRUE), 1),
-    mean_access  = round(mean(access_to_services, na.rm = TRUE), 1),
-    mean_housing = round(mean(housing,            na.rm = TRUE), 1),
-    .groups = "drop"
-  ) %>%
-  arrange(desc(mean_access)) %>%
-  print(n = 22)
 
 
 ```
-

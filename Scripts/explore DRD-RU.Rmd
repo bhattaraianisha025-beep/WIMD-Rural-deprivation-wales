@@ -25,17 +25,15 @@ master <- read_csv("../data/processed/master_dataset.csv") %>%
       ordered = TRUE)
   )
 
-cat("Master loaded:", nrow(master), "rows\n")
-cat("Rural:", sum(master$rural_urban == "Rural"),
-    "| Urban:", sum(master$rural_urban == "Urban"), "\n")
-
 ```
 
-```{r}
+```{r drd_crosstab}
+# Number of rural, urban LSOAs in each DRD category
 table(master$drd_category, master$rural_urban)
 ```
 
-```{r}
+```{r drd_pct}
+# row percentage-share of each category in rural and urban
 prop.table(
   table(master$drd_category, master$rural_urban),
   margin = 1
@@ -43,163 +41,163 @@ prop.table(
   round(3) * 100
 
 ```
-```{r}
+```{r rural_deep_rooted}
+
 master %>%
-  group_by(rural_urban, drd_category) %>%
-  summarise(n = n(), .groups = "drop") %>%
-  pivot_wider(
-    names_from  = rural_urban,
-    values_from = n,
-    values_fill = 0
-  ) %>%
-  mutate(
-    total     = Rural + Urban,
-    pct_rural = round(100 * Rural / total, 1),
-    pct_urban = round(100 * Urban / total, 1)
-  )
+  filter(drd_category == "LSOAs in Deep-rooted deprivation",
+         rural_urban  == "Rural") %>%
+  select(lsoa_name, la_name, ruc_name,
+         wimd_2025_rank, income_rank, access_rank, housing_rank)
+
 
 ```
 
-```{r}
+```{r invisible_lsoas}
+# never enter DRD tracking
 master %>%
-  filter(
-    drd_category == "LSOAs in Deep-rooted deprivation",
-    rural_urban  == "Rural"
-  ) %>%
-  select(
-    lsoa_name, la_name, ruc_name,
-    wimd_2025_rank,
-    income_rank,      # Low income rank = income-deprived (urban-type)
-    access_rank,      # Low access rank = access-deprived (rural-type)
-    housing_rank,
-    employment_rank,
-    health_rank
-  )
-
-```
-
-```{r}
-master %>%
-  filter(drd_category == "LSOAs in Deep-rooted deprivation") %>%
-  group_by(rural_urban) %>%
-  summarise(
-    n                   = n(),
-    median_overall_rank = median(wimd_2025_rank, na.rm = TRUE),
-    median_income_rank  = median(income_rank,    na.rm = TRUE),
-    median_access_rank  = median(access_rank,    na.rm = TRUE),
-    .groups = "drop"
-  )
-
-```
-
-```{r}
-master %>%
-  filter(
-    rural_urban    == "Rural",
-    access_rank    <= 192,      # Worst 10% on access to services
-    wimd_2025_rank >  50        # But NOT in the overall top 50
-  ) %>%
+  filter(rural_urban == "Rural",
+         access_rank <= 192,    # worst 10% on access
+         wimd_2025_rank > 50) %>%  # but not overall top 50
   summarise(
     count               = n(),
-    median_overall_rank = median(wimd_2025_rank, na.rm = TRUE),
-    median_access_rank  = median(access_rank,    na.rm = TRUE),
-    median_income_rank  = median(income_rank,    na.rm = TRUE)
+    median_overall_rank = median(wimd_2025_rank, na.rm=TRUE),
+    median_access_rank  = median(access_rank,    na.rm=TRUE),
+    median_income_rank  = median(income_rank,    na.rm=TRUE)
   )
 
+
 ```
 
-```{r}
+
+```{r invisible_by_la}
+# LAs have most invisible rural LSOAs
 master %>%
-  filter(
-    rural_urban    == "Rural",
-    access_rank    <= 192,
-    wimd_2025_rank >  50
-  ) %>%
-  count(la_name, sort = TRUE)
+  filter(rural_urban == "Rural", access_rank <= 192, wimd_2025_rank > 50) %>%
+  count(la_name, sort=TRUE)
+
 
 ```
 
-```{r}
-master %>%
-  filter(rural_urban == "Rural") %>%
-  mutate(
-    access_group = if_else(
-      access_rank <= 192,
-      "Severely access-deprived (worst 10%)",
-      "Not severely access-deprived"
-    )
-  ) %>%
-  group_by(access_group) %>%
-  summarise(
-    n                    = n(),
-    median_overall_rank  = median(wimd_2025_rank, na.rm = TRUE),
-    median_income_rank   = median(income_rank,    na.rm = TRUE),
-    pct_worst20_overall  = round(100 * mean(wimd_2025_rank <= 383), 1),
-    pct_top50_overall    = round(100 * mean(wimd_2025_rank <= 50),  1),
-    .groups = "drop"
-  )
-
-```
-
-```{r}
+```{r mechanism_proof}
+# structural proof- access deprivation alone vs income deprivation 
 master %>%
   filter(rural_urban == "Rural") %>%
-  mutate(
-    deprivation_type = case_when(
-      access_rank <= 383 & income_rank <= 383 ~ "Both access AND income deprived",
-      access_rank <= 383 & income_rank >  383 ~ "Access deprived only",
-      access_rank >  383 & income_rank <= 383 ~ "Income deprived only",
-      TRUE                                    ~ "Neither"
-    )
-  ) %>%
-  group_by(deprivation_type) %>%
+  mutate(dep_type = case_when(
+    access_rank <= 383 & income_rank <= 383 ~ "Both access AND income",
+    access_rank <= 383 & income_rank >  383 ~ "Access deprived only",
+    access_rank >  383 & income_rank <= 383 ~ "Income deprived only",
+    TRUE                                    ~ "Neither"
+  )) %>%
+  group_by(dep_type) %>%
   summarise(
     n                   = n(),
-    median_overall_rank = median(wimd_2025_rank, na.rm = TRUE),
+    median_overall_rank = median(wimd_2025_rank, na.rm=TRUE),
     pct_worst20_overall = round(100 * mean(wimd_2025_rank <= 383), 1),
-    pct_top50_overall   = round(100 * mean(wimd_2025_rank <= 50),  1),
     .groups = "drop"
   ) %>%
   arrange(median_overall_rank)
 
+
+```
+
+```{r drd_volatility}
+# rank stability across 20 years by DRD category
+# SD across 6 iterations
+master %>%
+  rowwise() %>%
+  mutate(rank_sd = sd(c_across(c(wimd_2025_rank, wimd_2019_rank, wimd_2014_rank,
+                                  wimd_2011_rank, wimd_2008_rank, wimd_2005_rank)),
+                      na.rm=TRUE)) %>%
+  ungroup() %>%
+  group_by(drd_category) %>%
+  summarise(n = n(), median_sd = round(median(rank_sd, na.rm=TRUE), 0), .groups="drop")
+
+```
+
+
+```{r drd_domain_profile}
+# Domain profile by DRD category- 2025 ranks only
+master %>%
+group_by(drd_category, rural_urban) %>%
+  summarise(
+    n             = n(),
+    median_income = median(income_rank,  na.rm=TRUE),
+    median_access = median(access_rank,  na.rm=TRUE),
+    .groups = "drop"
+  ) %>%
+  filter(n >= 2) %>%
+  arrange(drd_category, rural_urban)
+
 ```
 
 ```{r}
+top50 <- master %>% slice_min(wimd_2025_rank, n = 50)
+
+top50 %>%
+  count(rural_urban) %>%
+  mutate(pct = paste0(round(100 * n / 50, 0), "%"))
+```
+
+
+```{r}
+top50 %>%
+  select(wimd_2025_rank, lsoa_name, la_name,
+         rural_urban, income_rank, employment_rank, access_rank) %>%
+  arrange(wimd_2025_rank)
+```
+
+```{r}
+dom_cols <- c("income_rank","employment_rank","health_rank",
+              "education_rank","access_rank","housing_rank")
+
+list(
+  "Top 50 Rural (n=2)"      = top50 %>% filter(rural_urban == "Rural"),
+  "Top 50 Urban (n=48)"     = top50 %>% filter(rural_urban == "Urban"),
+  "All Rural Wales (n=561)" = master %>% filter(rural_urban == "Rural")
+) %>%
+  map_dfr(~summarise(.x, across(all_of(dom_cols),
+                                ~round(median(.x, na.rm=TRUE), 0))),
+          .id = "group")
+```
+
+```{r}
+domain_cols   <- c("wimd_2025_rank","income_rank","employment_rank",
+                   "health_rank","education_rank","access_rank",
+                   "housing_rank","community_safety_rank","physical_env_rank")
+domain_labels <- c("WIMD Overall","Income (22%)","Employment (20%)",
+                   "Health (15%)","Education (14%)","Access (10%)",
+                   "Housing (9%)","Community Safety (5%)","Physical Env (5%)")
+
+map2_dfr(domain_cols, domain_labels, function(col, label) {
+  t50 <- master %>% slice_min(.data[[col]], n = 50)
+  tibble(domain         = label,
+         rural_in_top50 = sum(t50$rural_urban == "Rural"),
+         urban_in_top50 = sum(t50$rural_urban == "Urban"))
+})
+```
+
+
+
+```{r drd_visualization}
 master %>%
   count(rural_urban, drd_category) %>%
   group_by(rural_urban) %>%
   mutate(pct = round(100 * n / sum(n), 1)) %>%
   ungroup() %>%
   ggplot(aes(x = rural_urban, y = pct, fill = drd_category)) +
-  geom_col(position = "stack", width = 0.6) +
-  geom_text(
-    aes(label = paste0(n, "\n(", pct, "%)")),
-    position  = position_stack(vjust = 0.5),
-    size      = 3.2,
-    colour    = "white",
-    fontface  = "bold"
-  ) +
-  scale_fill_manual(values = c(
-    "LSOAs never ranked in top 50 most deprived"    = "#74add1",
-    "LSOAs sometimes in the top 50 most deprived"   = "#f46d43",
-    "LSOAs often in the top 50 most deprived"       = "#d73027",
-    "LSOAs in Deep-rooted deprivation"              = "#4d0000"
-  )) +
-  labs(
-    title    = "Deep-Rooted Deprivation Category: Rural vs Urban LSOAs in Wales",
-    subtitle = "WIMD persistence tracking (2005–2025). Persistent deprivation is\nalmost entirely concentrated in Urban areas.",
-    x        = NULL,
-    y        = "Percentage of LSOAs (%)",
-    fill     = "Deprivation Persistence Category",
-    caption  = "Source: WIMD 2025 Deep-Rooted Deprivation (Welsh Government); RUC 2021 (ONS). n = 1,917 LSOAs."
-  ) +
-  theme_minimal(base_size = 11) +
-  theme(
-    legend.position = "bottom",
-    legend.text     = element_text(size = 8),
-    plot.title      = element_text(face = "bold")
-  ) +
-  guides(fill = guide_legend(nrow = 2))
+  geom_col(position = "stack", width = 0.55) +
+  geom_text(aes(label = ifelse(pct > 1.5, paste0(n, "\n(", pct, "%)"),"  ")),
+            position = position_stack(vjust=0.5),
+            size=3.2, colour="white", fontface="bold") +
+  scale_fill_manual(values = c("#74add1","#f46d43","#d73027","#4d0000")) +
+  labs(title = "Deep-Rooted Deprivation: Rural vs Urban LSOAs",
+       subtitle = "559 of 561 rural LSOAs have never appeared in the top 50 most deprived in 20 years",
+       x=NULL, y="% of LSOAs", fill="DRD Category",
+       caption = "Source: WIMD 2025 DRD (Welsh Government); RUC 2021 (ONS).") +
+  theme_minimal(base_size=11) +
+  theme(legend.position="bottom", plot.title=element_text(face="bold")) +
+  guides(fill = guide_legend(nrow=2))
+
 
 ```
 

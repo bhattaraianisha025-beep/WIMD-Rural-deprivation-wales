@@ -1,27 +1,21 @@
 ---
-title: "Explore WIMD rank data"
+title: "Explore WIMD 2025 rank data"
 author: 'Student ID: 52533934'
 date: "2026-06-26"
 output: html_document
 ---
 
 
-```{r setup, include=FALSE, message= FALSE, warning=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-```
-
-
-
-
-```{r load packages}
+```{r setup, message= FALSE, warning=FALSE}
 library(tidyverse)
 library(readODS)
 library(janitor)
-
 ```
 
 
+
 ```{r read data}
+# Load rank data´- skip 2 rows and drop empty 13th col
 ranks <- read_ods("../data/raw/wimd-2025-index-and-domain-ranks-by-small-area.ods",
            sheet = "WIMD_2025_ranks", skip = 2) %>% clean_names()
 ranks <- ranks %>% mutate(across(4:12, as.numeric))
@@ -33,12 +27,14 @@ names(ranks)
 ```
 
 
-```{r}
+```{r missing values and correlation}
+# All domains  zero missing values
 colSums(is.na(ranks[4:12]))
-round(cor(ranks[4:12],use = "complete.obs"),2)
+round(cor(ranks[4:12],use = "complete.obs"),2)  # domains correlation with overall WIMD rank
 ```
 
-```{r}
+```{r worst domain}
+#Lowest rank = most deprived
 domain_cols <- names(ranks)[5:12]
 
 ranks %>%
@@ -53,36 +49,21 @@ ranks %>%
 ```
 
 
-```{r}
-gaps <- ranks %>%
-  rowwise() %>%
-  mutate(
-    worst = min(c_across(all_of(domain_cols)), na.rm = TRUE),
-    best = max(c_across(all_of(domain_cols)), na.rm = TRUE),
-    gap = best - worst
-  ) %>%
-  ungroup()
-
-cat("Gap summary:\n")
-summary(gaps$gap)
-```
-
-```{r}
-gaps %>% arrange(desc(gap)) %>% select(1:3, worst, best, gap) %>% head(10)
-```
 
 
-```{r}
+```{r summary}
+#LA-levels medians for case
 ranks %>%
+  filter(local_authority_name_eng %in%
+           c("Powys", "Ceredigion", "Pembrokeshire", "Swansea")) %>%
   group_by(local_authority_name_eng) %>%
   summarise(
-    n = n(),
-    median_overall = median(wimd_2025, na.rm = TRUE),
-    median_access = median(access_to_services, na.rm = TRUE),
-    median_housing = median(housing, na.rm = TRUE),
+    n              = n(),
+    median_overall = median(wimd_2025,          na.rm = TRUE),
+    median_access  = median(access_to_services, na.rm = TRUE),
+    median_housing = median(housing,            na.rm = TRUE),
     .groups = "drop"
-  ) %>%
-  arrange(median_overall) %>%
-  print(n = 22)
+  )
+
 ```
 
