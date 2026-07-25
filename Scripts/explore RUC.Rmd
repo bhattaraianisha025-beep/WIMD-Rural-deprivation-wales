@@ -77,9 +77,9 @@ ruc %>%
 
 
 ```{r}
-ruc_la %>%
+ranks_la %>%
   filter(local_authority_name_eng %in% c("Powys", "Ceredigion", "Pembrokeshire", "Swansea")) %>%
-  count(local_authority_name_eng, ruc21nm) %>%
+  count(local_authority_name_eng, lsoa_code) %>%
   pivot_wider(
     names_from  = local_authority_name_eng,
     values_from = n,

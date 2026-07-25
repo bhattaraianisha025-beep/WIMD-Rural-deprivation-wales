@@ -1,0 +1,186 @@
+---
+title: "Check and visualization of data"
+author: 'Student ID: 52533934'
+date: "2026-07-25"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo=TRUE, message=FALSE, warning=FALSE,
+                      fig.width=9, fig.height=5, dpi=150)
+library(tidyverse)
+```
+
+
+```{r}
+setwd("C:/Users/Bruger/Desktop/WIMD-Rural-deprivation-wales")
+
+master <- read_csv("data/processed/master_dataset.csv", show_col_types=FALSE) %>%
+  mutate(rural_urban = factor(rural_urban, levels=c("Rural","Urban")))
+
+rural <- filter(master, rural_urban=="Rural")
+
+# Thresholds derived from the data, never hard-coded
+N   <- nrow(master)
+T20 <- floor(N*0.20)   # worst 20% of Wales
+T10 <- floor(N*0.10)   # worst 10% of Wales
+B20 <- N - T20         # best 20% boundary
+
+NEVER <- "LSOAs never ranked in top 50 most deprived"
+
+tibble(check = c("Rows","Rural","Urban","Worst 20% rank ≤","Worst 10% rank ≤"),
+       value = c(N, sum(master$rural_urban=="Rural"),
+                 sum(master$rural_urban=="Urban"), T20, T10))
+```
+
+```{r}
+# % of a group falling in the worst 20% of Wales on a given rank column
+pct20 <- function(df, col) round(100*mean(df[[col]] <= T20, na.rm=TRUE), 1)
+
+# % of a group falling in the BEST 20% of Wales
+pctbest20 <- function(df, col) round(100*mean(df[[col]] > B20, na.rm=TRUE), 1)
+
+# Domain columns and their WIMD weights (weights are published policy, not data)
+DOM <- tribble(
+  ~col,                    ~label,        ~weight,
+  "income_rank",           "Income",        22,
+  "employment_rank",       "Employment",    20,
+  "health_rank",           "Health",        15,
+  "education_rank",        "Education",     14,
+  "access_rank",           "Access",        10,
+  "housing_rank",          "Housing",        9,
+  "community_safety_rank", "Safety",         5,
+  "physical_env_rank",     "Phys Env",       5
+)
+```
+
+
+
+
+
+```{r theme}
+RED  <- "#C0392B"; BLUE <- "#2471A3"; ORG <- "#E67E22"
+PUR  <- "#7D3C98"; GRY  <- "#333333"; BG  <- "#FFFFFF"
+
+TH <- theme_minimal(base_size=11) +
+  theme(plot.background = element_rect(fill=BG, colour=NA),
+        panel.background= element_rect(fill=BG, colour=NA),
+        panel.grid      = element_blank(),
+        axis.line       = element_blank(),
+        axis.ticks      = element_blank(),
+        plot.title      = element_text(face="bold", size=13, colour="#111111",
+                                       margin=margin(b=3)),
+        plot.subtitle   = element_text(size=9.5, colour="#52514E",
+                                       margin=margin(b=8), lineheight=1.4),
+        plot.caption    = element_text(size=7.5, colour="#898781", hjust=0,
+                                       margin=margin(t=6)),
+        plot.margin     = margin(14,18,10,14),
+        axis.text       = element_text(size=9.5, colour="#444444"),
+        axis.title      = element_text(size=9.5, colour="#444444"),
+        legend.position = "bottom",
+        legend.key.size = unit(0.5,"cm"),
+        legend.text     = element_text(size=9.5, colour="#52514E"),
+        legend.title    = element_blank())
+
+dir.create("outputs", showWarnings=FALSE)
+sv  <- function(p,f,h=5) ggsave(file.path("outputs",f), p, width=9, height=h, dpi=150, bg=BG)
+PCT <- function(x) paste0(x,"%")
+SRC <- "Source: WIMD 2025 (Welsh Government); RUC 2021 (ONS). n=1,917 Welsh LSOAs."
+```
+
+
+```{r}
+# Which side of the weighting each domain sits on is decided by the DATA,
+# not by assumption: a domain is "rural higher" if rural %worst20 > urban %worst20.
+c2_side <- DOM %>%
+  rowwise() %>%
+  mutate(rural_pct = pct20(rural, col),
+         urban_pct = pct20(filter(master, rural_urban=="Urban"), col),
+         side      = if_else(rural_pct > urban_pct,
+                             "Rural deprivation higher",
+                             "Urban deprivation higher")) %>%
+  ungroup()
+
+c2_side %>% select(label, weight, rural_pct, urban_pct, side)
+
+c2 <- c2_side %>%
+  count(side, wt=weight, name="weight") %>%
+  mutate(domains = map_chr(side, ~ c2_side %>% filter(side==.x) %>%
+                             mutate(t=paste0(label," (",weight,"%)")) %>%
+                             pull(t) %>% paste(collapse=" + ")))
+c2
+```
+
+
+```{r}
+p2 <- c2 %>%
+  mutate(side=factor(side, levels=c("Rural deprivation higher","Urban deprivation higher"))) %>%
+  ggplot(aes(x=weight, y="WIMD score", fill=side)) +
+  geom_col(position="stack", width=0.45, colour=BG, linewidth=0.5) +
+  geom_text(aes(label=PCT(weight)), position=position_stack(vjust=0.5),
+            size=10, fontface="bold", colour="white") +
+  scale_fill_manual(values=c("Rural deprivation higher"=RED,
+                             "Urban deprivation higher"=BLUE)) +
+  scale_x_continuous(limits=c(0,100), labels=PCT) +
+  labs(title = "WIMD weighting highlights urban deprivation while masking rural deprivation",
+       subtitle = paste0(
+         "Weighting means each domain contributes a fixed share of the final WIMD score.\n",
+         "The two domains where rural deprivation is higher — access and housing — together carry ",
+         c2$weight[c2$side=="Rural deprivation higher"], "% of the score.\n",
+         "The six domains where urban deprivation is higher carry ",
+         c2$weight[c2$side=="Urban deprivation higher"],
+         "%. A rural area can be among the worst in Wales\non access and still rank as average overall."),
+       x="Share of the total WIMD score (%)", y=NULL,
+       caption="Weights: WIMD 2025 technical report (Welsh Government). Side of split derived from the data.") +
+  TH + theme(axis.text.y=element_blank())
+p2; sv(p2,"c2_weight_structure.png", h=3.8)
+```
+
+```{r}
+# rural case  = rural LSOA in worst 10% on access with the best income rank
+# urban case  = the most income-deprived urban LSOA
+rural_case <- rural %>% filter(access_rank <= T10) %>% slice_max(income_rank, n=1)
+urban_case <- master %>% filter(rural_urban=="Urban") %>% slice_min(income_rank, n=1)
+
+c2b <- bind_rows(rural_case, urban_case) %>%
+  transmute(lsoa = paste0(lsoa_name, "\n(", rural_urban, ", ", la_name, ")"),
+            Income = income_rank, Access = access_rank, Overall = wimd_2025_rank)
+c2b
+```
+
+
+```{r}
+p2b <- c2b %>%
+  pivot_longer(-lsoa, names_to="domain", values_to="rank") %>%
+  mutate(domain = factor(domain, levels=c("Income","Access","Overall")),
+         lsoa   = factor(lsoa, levels=c2b$lsoa)) %>%
+  ggplot(aes(x=domain, y=rank, fill=domain)) +
+  geom_col(width=0.55, colour=BG, linewidth=0.4) +
+  geom_text(aes(label=format(rank, big.mark=",")), vjust=-0.4,
+            size=3.8, fontface="bold", colour="#111111") +
+  facet_wrap(~lsoa) +
+  scale_fill_manual(values=c(Income=BLUE, Access=RED, Overall=GRY)) +
+  scale_y_continuous(limits=c(0, N*1.12),
+                     breaks=c(1, T20, round(N/2), B20, N),
+                     labels=c("1\nmost deprived", paste0(T20,"\nworst 20%"),
+                              "middle", paste0(B20,"\nbest 20%"),
+                              paste0(format(N,big.mark=","),"\nleast deprived"))) +
+  labs(title = "Why weighting matters: two real Welsh communities",
+       subtitle = paste0(
+         c2b$lsoa[1] %>% str_replace_all("\n"," "), " is among the worst in Wales for access ",
+         "(rank ", c2b$Access[1], ") but has a high income rank (", format(c2b$Income[1],big.mark=","),
+         ").\nBecause income carries 22% of the score and access only 10%, its overall rank is ",
+         format(c2b$Overall[1],big.mark=","), " — it looks comfortable.\n",
+         c2b$lsoa[2] %>% str_replace_all("\n"," "), " has the worst income rank in Wales (",
+         c2b$Income[2], "), which alone drives its overall rank to ", c2b$Overall[2], "."),
+       x=NULL, y="WIMD rank (lower = more deprived)", caption=SRC) +
+  TH + theme(legend.position="none",
+             strip.text=element_text(size=10, face="bold", colour=GRY))
+p2b; sv(p2b,"c2b_two_communities.png", h=5.5)
+```
+
+
+```{r}
+
+```
+

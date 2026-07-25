@@ -14,10 +14,10 @@ library(readODS)
 
 
 ```{r}
-drd_WIMD <- read_ods(
+drd_WIMD <- suppressWarnings(read_ods(
   "../data/raw/welsh-index-of-multiple-deprivation-wimd-2025-data-underlying-deep-dooted-deprivation-analysis.ods",
   sheet = "Data",
-  skip = 4)%>% 
+  skip = 4))%>% 
   clean_names() %>%
   filter(!is.na(.[[3]])) # col 3 = lsoa_code
 cat("Rows:", nrow(drd_WIMD), "| Cols:", ncol(drd_WIMD), "\n")
