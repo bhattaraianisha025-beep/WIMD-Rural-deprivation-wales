@@ -181,6 +181,439 @@ p2b; sv(p2b,"c2b_two_communities.png", h=5.5)
 
 
 ```{r}
+# For each rank column: find the 50 smallest ranks, count how many are rural.
+# Base-R indexing (order + [[ ) avoids tidy-eval lazy-evaluation problems
+# that occur when a column name is passed as a variable into dplyr verbs
+# nested inside map_int().
+top50_rural_count <- function(col_name) {
+  ranked_order <- order(master[[col_name]])   # row positions, smallest rank first
+  top50_rows   <- ranked_order[1:50]
+  sum(master$rural_urban[top50_rows] == "Rural")
+}
+
+c4 <- DOM %>%
+  bind_rows(tibble(col = "wimd_2025_rank", label = "Overall WIMD", weight = NA)) %>%
+  mutate(rural = vapply(col, top50_rural_count, integer(1)),
+         urban = 50L - rural,
+         axis  = if_else(is.na(weight), label, paste0(label, "\n(", weight, "%)")))
+c4 %>% select(label, weight, rural, urban)
+```
+
+
+```{r}
+p4 <- c4 %>%
+  mutate(axis = fct_reorder(axis, -rural)) %>%
+  select(axis, rural, urban) %>%
+  pivot_longer(-axis, names_to = "grp", values_to = "n") %>%
+  mutate(grp = factor(grp, levels = c("rural", "urban"),
+                      labels = c("Rural areas", "Urban areas"))) %>%
+  ggplot(aes(x = axis, y = n, fill = grp)) +
+  geom_col(position = "stack", width = 0.65, colour = BG, linewidth = 0.4) +
+  geom_text(aes(label = if_else(n >= 8, as.character(n), "")),
+            position = position_stack(vjust = 0.5),
+            size = 3.8, fontface = "bold", colour = "white") +
+  scale_fill_manual(values = c("Rural areas" = RED, "Urban areas" = BLUE)) +
+  scale_y_continuous(limits = c(0, 52), breaks = c(0, 25, 50)) +
+  labs(title    = "Are the 50 most deprived areas in each domain rural or urban?",
+       subtitle = paste0(
+         "All 50 most access-deprived areas are rural — access carries just 10% of the score.\n",
+         "Of the 50 most income-deprived areas, ", c4$rural[c4$label == "Income"],
+         " are rural — income carries 22%.\n",
+         "Rural deprivation concentrates in the domains that count least."),
+       x = NULL, y = "Number of areas (of 50 most deprived)", caption = SRC) +
+  TH
+p4; sv(p4, "c4_top50_per_domain.png")
+```
+
+```{r}
+LAS <- c("Powys", "Ceredigion", "Pembrokeshire", "Swansea")
+
+# Compute each %worst20 directly — no cur_data_all(), no fragile helpers
+c8 <- master %>%
+  filter(la_name %in% LAS) %>%
+  group_by(la_name) %>%
+  summarise(n          = n(),
+            Overall    = round(100 * mean(wimd_2025_rank  <= T20), 1),
+            Income     = round(100 * mean(income_rank     <= T20), 1),
+            Employment = round(100 * mean(employment_rank <= T20), 1),
+            Access     = round(100 * mean(access_rank     <= T20), 1),
+            Housing    = round(100 * mean(housing_rank    <= T20), 1),
+            .groups    = "drop") %>%
+  mutate(la_name = factor(la_name, levels = LAS)) %>%
+  arrange(la_name)
+c8
+```
+
+```{r}
+p8 <- c8 %>%
+  select(-n) %>%
+  pivot_longer(-la_name, names_to = "measure", values_to = "pct") %>%
+  mutate(measure = factor(measure,
+           levels = c("Overall", "Income", "Employment", "Access", "Housing"))) %>%
+  ggplot(aes(x = la_name, y = pct, fill = measure)) +
+  geom_col(position = "dodge", width = 0.82, colour = BG, linewidth = 0.25) +
+  geom_text(aes(label = PCT(pct)), position = position_dodge(width = 0.82),
+            vjust = -0.4, size = 2.7, fontface = "bold", colour = "#111111") +
+  scale_fill_manual(
+    values = c(Overall = GRY, Income = BLUE, Employment = PUR,
+               Access = RED, Housing = ORG),
+    labels = c("Overall WIMD", "Income (22%)", "Employment (20%)",
+               "Access (10%)", "Housing (9%)")) +
+  scale_y_continuous(limits = c(0, 85), labels = PCT, breaks = seq(0, 80, 20)) +
+  labs(title    = "Four local authorities: high-weight and low-weight domains side by side",
+       subtitle = paste0(
+         "Blue + purple = high-weight urban domains (income 22% + employment 20% = 42%).\n",
+         "Red + orange = low-weight rural domains (access 10% + housing 9% = 19%).\n",
+         "Ceredigion: ", c8$Income[c8$la_name == "Ceredigion"], "% worst 20% on income, ",
+         c8$Access[c8$la_name == "Ceredigion"], "% on access, but only ",
+         c8$Overall[c8$la_name == "Ceredigion"], "% deprived overall."),
+       x = NULL, y = "% of areas in worst 20% of Wales",
+       caption = paste(SRC, "Worst 20% = rank ≤", T20, "of", format(N, big.mark = ","))) +
+  TH
+p8; sv(p8, "c8_la_five_measures.png", h = 5.5)
+```
+
+```{r}
+
+c7_groups <- rural %>%
+  mutate(income_dep = income_rank <= T20,
+         access_dep = access_rank <= T20,
+         grp = case_when(
+           income_dep &  access_dep ~ "Income and access deprived",
+           income_dep & !access_dep ~ "Income deprived only",
+          !income_dep &  access_dep ~ "Access deprived only",
+           TRUE                     ~ "Neither"),
+         col = case_when(
+           income_dep &  access_dep ~ PUR,
+           income_dep & !access_dep ~ BLUE,
+          !income_dep &  access_dep ~ RED,
+           TRUE                     ~ NA_character_)) %>%
+  group_by(grp, col) %>%
+  summarise(n           = n(),
+            visible_n   = sum(wimd_2025_rank <= T20),
+            visible_pct = round(100 * mean(wimd_2025_rank <= T20), 1),
+            .groups     = "drop")
+c7_groups
+c7 <- c7_groups %>%
+  filter(grp != "Neither") %>%
+  mutate(grp = factor(grp, levels = c("Income deprived only",
+                                      "Income and access deprived",
+                                      "Access deprived only")))
+
+# Fails immediately, at the point of creation — not three chunks
+# later inside a ggplot call
+stopifnot(!any(is.na(c7$col)))
+c7 %>% select(grp, n, visible_pct, col)
+```
+
+
+```{r}
+p7 <- c7 %>%
+  mutate(lab = paste0(grp, "\n(", n, " areas)"),
+         lab = fct_reorder(lab, -visible_pct)) %>%
+  ggplot(aes(x = lab, y = visible_pct, fill = col)) +
+  geom_col(width = 0.5, colour = BG, linewidth = 0.4) +
+  geom_text(aes(label = PCT(visible_pct)), vjust = -0.4,
+            size = 9, fontface = "bold", colour = "#111111") +
+  scale_fill_identity() +
+  scale_y_continuous(limits = c(0, 100), labels = PCT, breaks = seq(0, 100, 25)) +
+  labs(title    = "Low income puts a rural community on the map. Poor access does not.",
+       subtitle = "% of rural areas recorded in the worst 20% of Wales overall, by type of deprivation",
+       x = NULL, y = "% in worst 20% of Wales overall", caption = SRC) +
+  TH
+p7; sv(p7, "c7_mechanism.png", h = 5)
+```
+
+
+```{r}
+c5_full <- master %>%
+  count(rural_urban, drd_category) %>%
+  group_by(rural_urban) %>%
+  mutate(pct = round(100 * n / sum(n), 1)) %>%
+  ungroup()
+c5_full
+
+c5 <- master %>%
+  mutate(status = if_else(drd_category == NEVER,
+                          "Never in the 50 most deprived",
+                          "Has been in the 50 most deprived")) %>%
+  count(rural_urban, status) %>%
+  group_by(rural_urban) %>%
+  mutate(pct = round(100 * n / sum(n), 1)) %>%
+  ungroup()
+c5
+```
+
+
+```{r}
+never_rural <- c5$n[c5$rural_urban == "Rural" & c5$status == "Never in the 50 most deprived"]
+ever_rural  <- c5$n[c5$rural_urban == "Rural" & c5$status == "Has been in the 50 most deprived"]
+ever_urban  <- c5$n[c5$rural_urban == "Urban" & c5$status == "Has been in the 50 most deprived"]
+
+p5 <- c5 %>%
+  mutate(status = factor(status, levels = c("Never in the 50 most deprived",
+                                            "Has been in the 50 most deprived"))) %>%
+  ggplot(aes(x = rural_urban, y = pct, fill = status)) +
+  geom_col(position = "stack", width = 0.44, colour = BG, linewidth = 0.4) +
+  geom_text(aes(label = paste0(n, " areas\n", pct, "%")),
+            position = position_stack(vjust = 0.5),
+            size = 3.8, fontface = "bold", colour = "white") +
+  scale_fill_manual(values = c("Never in the 50 most deprived" = BLUE,
+                               "Has been in the 50 most deprived" = ORG)) +
+  scale_y_continuous(labels = PCT, breaks = seq(0, 100, 25)) +
+  labs(title    = "Twenty years of tracking — rural Wales is almost absent",
+       subtitle = paste0(
+         "Since 2005 Welsh Government has recorded the 50 most deprived areas each year.\n",
+         "Only ", ever_rural, " of ", ever_rural + never_rural,
+         " rural areas have ever appeared. ", ever_urban, " urban areas have.\n",
+         "Rural deprivation, concentrated in access and housing, cannot lower the overall score enough."),
+       x = NULL, y = "% of areas",
+       caption = "Source: WIMD 2025 Deep-Rooted Deprivation; RUC 2021 (ONS).") +
+  TH + guides(fill = guide_legend(nrow = 2))
+p5; sv(p5, "c5_twenty_year_tracking.png")
+```
+
+```{r}
+# Sensitivity check: threshold precision matters here
+tibble(threshold = c(T10, 192),
+       n         = c(nrow(filter(rural, access_rank <= T10, wimd_2025_rank > T20)),
+                     nrow(filter(rural, access_rank <= 192,  wimd_2025_rank > T20))))
+
+invisible_lsoas <- rural %>% filter(access_rank <= T10, wimd_2025_rank > T20)
+
+c11 <- invisible_lsoas %>% count(la_name, sort = TRUE, name = "n") %>% slice_head(n = 10)
+c11
+
+tibble(check = "invisible areas that appear in worst 20% overall",
+       value = sum(invisible_lsoas$wimd_2025_rank <= T20))
+```
+
+
+```{r}
+p11 <- c11 %>%
+  mutate(la_name = fct_reorder(la_name, n)) %>%
+  ggplot(aes(x = n, y = la_name)) +
+  geom_col(fill = RED, width = 0.65, colour = BG, linewidth = 0.3) +
+  geom_text(aes(label = paste0(n, " communities")),
+            hjust = -0.08, size = 3.8, fontface = "bold", colour = "#111111") +
+  scale_x_continuous(limits = c(0, max(c11$n) * 1.35), expand = c(0, 0)) +
+  labs(title    = paste0(nrow(invisible_lsoas),
+                         " rural communities: worst 10% for access — invisible in WIMD"),
+       subtitle = paste0(
+         "In the 10% furthest from services in Wales: GP, hospital, school, shop, transport.\n",
+         "Not one appears in the worst 20% overall — none will trigger WIMD-based policy or funding.\n",
+         "Named individually in the appendix."),
+       x = "Number of communities", y = NULL,
+       caption = paste0("Invisible = access rank ≤", T10,
+                        " and overall rank > ", T20, ". ", SRC)) +
+  TH
+p11; sv(p11, "c11_invisible_communities.png", h = 6)
+```
+
+```{r}
+c1 <- DOM %>%
+  bind_rows(tibble(col="wimd_2025_rank", label="Overall WIMD", weight=NA)) %>%
+  rowwise() %>%
+  mutate(rural_pct = pct20(rural, col),
+         urban_pct = pct20(filter(master, rural_urban=="Urban"), col)) %>%
+  ungroup() %>%
+  mutate(gap  = round(rural_pct-urban_pct,1),
+         axis = if_else(is.na(weight), label, paste0(label," (",weight,"%)")))
+c1 %>% select(label, weight, rural_pct, urban_pct, gap) %>% arrange(desc(gap))
+```
+
+```{r}
+p1 <- c1 %>%
+  mutate(axis = fct_reorder(axis, gap)) %>%
+  ggplot(aes(x = gap, y = axis, fill = gap > 0)) +
+  geom_col(width = 0.6, colour = BG, linewidth = 0.3) +
+  geom_vline(xintercept = 0, linewidth = 0.7, colour = "#BBBBBB") +
+  geom_text(aes(label = paste0(if_else(gap > 0, "+", ""), gap, "%"),
+                hjust = if_else(gap > 0, -0.15, 1.12)),
+            size = 3.2, fontface = "bold", colour = "#111111") +
+  scale_fill_manual(values = c(`TRUE` = RED, `FALSE` = BLUE), guide = "none") +
+  scale_x_continuous(limits = c(min(c1$gap) - 8, max(c1$gap) + 11),
+                     labels = function(x) paste0(if_else(x > 0, "+", ""), x, "%")) +
+  labs(title    = "Rural–urban gap across all eight WIMD domains",
+       subtitle = "Positive (red) = rural more often in worst 20%. Negative (blue) = urban more often.",
+       x = NULL, y = NULL, caption = SRC) +
+  TH
+p1; sv(p1, "c1_all_domain_gaps.png")
+```
+
+```{r}
+c3 <- master %>%
+  mutate(gap = access_rank - wimd_2025_rank) %>%
+  group_by(rural_urban) %>%
+  summarise(n = n(),
+            median_gap = median(gap),
+            pct_hidden = round(100 * mean(gap < 0), 1),
+            .groups = "drop")
+c3
+```
+
+```{r}
+p3 <- c3 %>%
+  ggplot(aes(x = rural_urban, y = pct_hidden, fill = rural_urban)) +
+  geom_col(width = 0.44, colour = BG, linewidth = 0.4) +
+  geom_text(aes(label = PCT(pct_hidden), colour = rural_urban),
+            vjust = -0.35, size = 13, fontface = "bold", show.legend = FALSE) +
+  scale_fill_manual(values = c(Rural = RED, Urban = BLUE), guide = "none") +
+  scale_colour_manual(values = c(Rural = RED, Urban = BLUE), guide = "none") +
+  scale_y_continuous(limits = c(0, 95), labels = PCT, breaks = seq(0, 75, 25)) +
+  labs(title    = "Most rural areas score worse on access than their overall WIMD rank suggests",
+       subtitle = paste0("The typical rural area sits ",
+                         abs(c3$median_gap[c3$rural_urban == "Rural"]),
+                         " rank positions lower on access than on its overall score."),
+       x = NULL, y = "% of areas whose access rank is worse than their overall rank",
+       caption = SRC) +
+  TH
+p3; sv(p3, "c3_access_rank_gap.png")
+```
+
+```{r}
+c6 <- bind_rows(
+  rural %>% filter(drd_category==NEVER) %>%
+    summarise(group="Rural, never tracked", n=n(),
+              Income=median(income_rank), Access=median(access_rank)),
+  master %>% filter(rural_urban=="Urban",
+                    drd_category=="LSOAs in Deep-rooted deprivation") %>%
+    summarise(group="Urban, deep-rooted", n=n(),
+              Income=median(income_rank), Access=median(access_rank)))
+c6
+```
+
+
+```{r}
+p6 <- c6 %>%
+  mutate(lab = paste0(group, "\n(", n, " areas)")) %>%
+  pivot_longer(c(Income, Access), names_to = "domain", values_to = "rank") %>%
+  mutate(domain = factor(domain, levels = c("Income", "Access"),
+                         labels = c("Income rank (22%)", "Access rank (10%)"))) %>%
+  ggplot(aes(x = lab, y = rank, fill = domain)) +
+  geom_col(position = "dodge", width = 0.54, colour = BG, linewidth = 0.4) +
+  geom_text(aes(label = format(rank, big.mark = ",")),
+            position = position_dodge(width = 0.54),
+            vjust = -0.4, size = 3.8, fontface = "bold", colour = "#111111") +
+  scale_fill_manual(values = c("Income rank (22%)" = BLUE,
+                               "Access rank (10%)" = RED)) +
+  scale_y_continuous(limits = c(0, N * 0.75),
+                     breaks = c(1, T20, round(N/2), 1150), labels = scales::comma) +
+  labs(title    = "Never-tracked rural areas and deep-rooted urban areas — mirror-image profiles",
+       subtitle = "Never-tracked rural: comfortable on income, severely deprived on access. Urban deep-rooted: the reverse.",
+       x = NULL, y = "Median rank (lower = more deprived)", caption = SRC) +
+  TH
+p6; sv(p6, "c6_drd_profiles.png")
+```
+
+
+```{r}
+cer <- filter(master, la_name == "Ceredigion")
+
+c9 <- bind_rows(
+  cer %>% filter(str_detect(lsoa_name, "Aberystwyth")) %>%
+    summarise(area = "Aberystwyth (town)",
+              n = n(),
+              Overall = median(wimd_2025_rank),
+              Access  = median(access_rank)),
+  cer %>% filter(rural_urban == "Rural") %>%
+    summarise(area = "Rural Ceredigion",
+              n = n(),
+              Overall = median(wimd_2025_rank),
+              Access  = median(access_rank)))
+c9
+
+tibble(check = "access-rank gap between town and hinterland",
+       value = abs(diff(c9$Access)))
+```
+
+```{r}
+gap9 <- abs(diff(c9$Access))
+
+p9 <- c9 %>%
+  mutate(lab = paste0(area, "\n(", n, " areas)")) %>%
+  pivot_longer(c(Overall, Access), names_to = "measure", values_to = "rank") %>%
+  mutate(measure = factor(measure, levels = c("Overall", "Access"),
+                          labels = c("Overall WIMD rank", "Access rank"))) %>%
+  ggplot(aes(x = lab, y = rank, fill = measure)) +
+  geom_col(position = "dodge", width = 0.52, colour = BG, linewidth = 0.4) +
+  geom_text(aes(label = format(rank, big.mark = ",")),
+            position = position_dodge(width = 0.52),
+            vjust = -0.4, size = 3.8, fontface = "bold", colour = "#111111") +
+  scale_fill_manual(values = c("Overall WIMD rank" = BLUE, "Access rank" = RED)) +
+  scale_y_continuous(limits = c(0, N * 0.62),
+                     breaks = c(1, T20, round(N/2)), labels = scales::comma) +
+  labs(title    = "Inside one local authority: town and hinterland are far apart on access",
+       subtitle = paste0("Median access rank differs by ", gap9,
+                         " positions between Aberystwyth and rural Ceredigion."),
+       x = NULL, y = "Median WIMD rank (lower = more deprived)", caption = SRC) +
+  TH
+p9; sv(p9, "c9_within_ceredigion.png")
+```
+
+
+```{r}
+c10 <- master %>%
+  group_by(rural_urban) %>%
+  summarise(best20_health  = round(100 * mean(health_rank > B20), 1),
+            worst20_access = round(100 * mean(access_rank <= T20), 1),
+            .groups = "drop")
+c10
+
+tibble(check = "Spearman correlation, health rank vs access rank (rural only)",
+       value = round(cor(rural$health_rank, rural$access_rank, method = "spearman"), 3))
+```
+
+```{r}
+p10 <- c10 %>%
+  pivot_longer(-rural_urban, names_to = "measure", values_to = "pct") %>%
+  mutate(measure = factor(measure,
+           levels = c("best20_health", "worst20_access"),
+           labels = c("In healthiest 20% of Wales", "In worst 20% for access"))) %>%
+  ggplot(aes(x = measure, y = pct, fill = rural_urban)) +
+  geom_col(position = "dodge", width = 0.55, colour = BG, linewidth = 0.4) +
+  geom_text(aes(label = PCT(pct)), position = position_dodge(width = 0.55),
+            vjust = -0.4, size = 5, fontface = "bold", colour = "#111111") +
+  scale_fill_manual(values = c(Rural = RED, Urban = BLUE)) +
+  scale_y_continuous(limits = c(0, 70), labels = PCT, breaks = seq(0, 60, 20)) +
+  labs(title    = "Rural Wales measures as healthy while being furthest from health services",
+       subtitle = "WIMD's health domain is built from recorded illness. Communities far from services may generate less of that record.",
+       x = NULL, y = "% of areas", caption = SRC) +
+  TH
+p10; sv(p10, "c10_health_and_access.png")
+```
+
+```{r}
+dual <- rural %>% filter(access_rank <= T20, housing_rank <= T20)
+tibble(check = c("dual-deprived rural areas", "of which visible in worst 20% overall"),
+       value = c(nrow(dual), sum(dual$wimd_2025_rank <= T20)))
+
+c12 <- dual %>%
+  count(la_name, name = "n") %>%
+  left_join(count(rural, la_name, name = "rural_total"), by = "la_name") %>%
+  mutate(pct_of_rural = round(100 * n / rural_total, 1)) %>%
+  arrange(desc(n)) %>% slice_head(n = 8)
+c12
+```
+
+```{r}
+p12 <- c12 %>%
+  mutate(la_name = fct_reorder(la_name, n)) %>%
+  ggplot(aes(x = n, y = la_name)) +
+  geom_col(fill = ORG, width = 0.65, colour = BG, linewidth = 0.3) +
+  geom_text(aes(label = paste0(n, "  (", pct_of_rural, "% of rural areas)")),
+            hjust = -0.05, size = 3.4, colour = "#111111") +
+  scale_x_continuous(limits = c(0, max(c12$n) * 2.1), expand = c(0, 0)) +
+  labs(title    = paste0(nrow(dual),
+         " rural areas: worst 20% for both access AND housing — none appear deprived overall"),
+       subtitle = "Deprivation on both rural-worse domains, neither of the domains that drive the score.",
+       x = "Number of areas", y = NULL,
+       caption = paste0("Access rank ≤", T20, " and housing rank ≤", T20, ". ", SRC)) +
+  TH
+p12; sv(p12, "c12_dual_deprivation.png", h = 6)
+```
+
+```{r}
 
 ```
 
