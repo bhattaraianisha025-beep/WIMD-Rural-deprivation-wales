@@ -564,84 +564,94 @@ p6; sv(p6, "c6_drd_profiles.png")
 ```{r}
 cer <- filter(master, la_name == "Ceredigion")
 
-c9 <- bind_rows(
-  cer %>% filter(str_detect(lsoa_name, "Aberystwyth")) %>%
-    summarise(area = "Aberystwyth (town)",
-              n = n(),
-              Overall = median(wimd_2025_rank),
-              Access  = median(access_rank)),
-  cer %>% filter(rural_urban == "Rural") %>%
-    summarise(area = "Rural Ceredigion",
-              n = n(),
-              Overall = median(wimd_2025_rank),
-              Access  = median(access_rank)))
-c9
+ab_pts <- cer %>% filter(str_detect(lsoa_name, "Aberystwyth")) %>%
+  transmute(group = "Aberystwyth (town)", access_rank)
+ru_pts <- cer %>% filter(rural_urban == "Rural") %>%
+  transmute(group = "Rural Ceredigion", access_rank)
+c9 <- bind_rows(ab_pts, ru_pts)
 
-tibble(check = "access-rank gap between town and hinterland",
-       value = abs(diff(c9$Access)))
+# What the old median hid: individual ranks in each group
+sort(ab_pts$access_rank)
+sort(ru_pts$access_rank)
+
+# Simple counts instead of an average — easy to state, nothing to explain
+c9 %>%
+  group_by(group) %>%
+  summarise(n = n(), in_worst20 = sum(access_rank <= T20), .groups = "drop")
+
 
 ```
 
 
 ```{r}
-gap9 <- abs(diff(c9$Access))
+ab_n   <- sum(c9$group == "Aberystwyth (town)")
+ru_n   <- sum(c9$group == "Rural Ceredigion")
+ab_bad <- sum(c9$group == "Aberystwyth (town)" & c9$access_rank <= T20)
+ru_bad <- sum(c9$group == "Rural Ceredigion"   & c9$access_rank <= T20)
+
+set.seed(1)  # fixed seed so the jitter looks the same every time this runs
 
 p9 <- c9 %>%
-  mutate(lab = paste0(area, "\n(", n, " areas)")) %>%
-  pivot_longer(c(Overall, Access), names_to = "measure", values_to = "rank") %>%
-  mutate(measure = factor(measure, levels = c("Overall", "Access"),
-                          labels = c("Overall WIMD rank", "Access rank"))) %>%
-  ggplot(aes(x = lab, y = rank, fill = measure)) +
-  geom_col(position = "dodge", width = 0.52, colour = BG, linewidth = 0.4) +
-  geom_text(aes(label = format(rank, big.mark = ",")),
-            position = position_dodge(width = 0.52),
-            vjust = -0.4, size = 3.8, fontface = "bold", colour = "#111111") +
-  scale_fill_manual(values = c("Overall WIMD rank" = BLUE, "Access rank" = RED)) +
-  scale_y_continuous(limits = c(0, N * 0.62),
-                     breaks = c(1, T20, round(N/2)), labels = scales::comma) +
-  # Host: "emphasise what numbers mean (lower means more deprived)."
-  # Said plainly as the FIRST line of the subtitle — no fragile on-chart
-  # annotation needed, and it reads before anything else on the slide.
+  mutate(group = factor(group, levels = c("Aberystwyth (town)", "Rural Ceredigion"))) %>%
+  ggplot(aes(x = group, y = access_rank, colour = group)) +
+  annotate("rect", xmin = -Inf, xmax = Inf, ymin = 0, ymax = T20,
+           fill = RED, alpha = 0.08) +
+  geom_hline(yintercept = T20, linetype = "dashed", colour = "grey50", linewidth = 0.4) +
+  geom_jitter(width = 0.12, height = 0, size = 3.2, alpha = 0.85) +
+  scale_colour_manual(values = c("Aberystwyth (town)" = BLUE, "Rural Ceredigion" = RED), guide = "none") +
+  scale_y_continuous(limits = c(0, N), labels = scales::comma) +
   labs(title    = "Inside one local authority: town and hinterland are far apart on access",
        subtitle = paste0(
-         "Lower rank = more deprived in Wales.\n",
-         "Median access rank differs by ", gap9,
-         " positions between Aberystwyth and rural Ceredigion."),
-       x = NULL, y = "Median WIMD rank", caption = SRC) +
+         "Each dot is one real neighbourhood. The shaded band marks the worst 20% for access in Wales.\n",
+         ab_bad, " of ", ab_n, " Aberystwyth neighbourhoods fall in that band. ",
+         ru_bad, " of ", ru_n, " rural Ceredigion neighbourhoods do."),
+       x = NULL, y = "Access rank (1 = most deprived, 1,917 = least deprived)",
+       caption = SRC) +
   TH
 p9; sv(p9, "c9_within_ceredigion.png")
+
 
 ```
 
 
 ```{r}
 c10 <- master %>%
-  group_by(rural_urban) %>%
-  summarise(best20_health  = round(100 * mean(health_rank > B20), 1),
-            worst20_access = round(100 * mean(access_rank <= T20), 1),
-            .groups = "drop")
+  mutate(access_group = if_else(access_rank <= T20,
+                                "Poor access to services",
+                                "Normal access to services"),
+         access_group = factor(access_group,
+                        levels = c("Poor access to services",
+                                  "Normal access to services"))) %>%
+  group_by(rural_urban, access_group) %>%
+  summarise(n           = n(),
+            healthy_n   = sum(health_rank > B20),
+            pct_healthy = round(100 * healthy_n / n, 1),
+            .groups     = "drop")
 c10
-
-tibble(check = "Spearman correlation, health rank vs access rank (rural only)",
-       value = round(cor(rural$health_rank, rural$access_rank, method = "spearman"), 3))
-
 ```
 
 ```{r}
+
+
 p10 <- c10 %>%
-  pivot_longer(-rural_urban, names_to = "measure", values_to = "pct") %>%
-  mutate(measure = factor(measure,
-           levels = c("best20_health", "worst20_access"),
-           labels = c("In healthiest 20% of Wales", "In worst 20% for access"))) %>%
-  ggplot(aes(x = measure, y = pct, fill = rural_urban)) +
-  geom_col(position = "dodge", width = 0.55, colour = BG, linewidth = 0.4) +
-  geom_text(aes(label = PCT(pct)), position = position_dodge(width = 0.55),
-            vjust = -0.4, size = 5, fontface = "bold", colour = "#111111") +
-  scale_fill_manual(values = c(Rural = RED, Urban = BLUE)) +
-  scale_y_continuous(limits = c(0, 70), labels = PCT, breaks = seq(0, 60, 20)) +
-  labs(title    = "Rural Wales measures as healthy while being furthest from health services",
-       subtitle = "Communities far from services may generate less of that record.",
-       x = NULL, y = "% of areas", caption = SRC) +
+  ggplot(aes(x = access_group, y = pct_healthy, fill = rural_urban)) +
+  geom_col(position = position_dodge(width = 0.6), width = 0.55,
+           colour = BG, linewidth = 0.4) +
+  geom_text(aes(label = paste0(healthy_n, " of ", n)),
+            position = position_dodge(width = 0.6),
+            vjust = -1.6, size = 5.2, fontface = "bold", colour = "#111111") +
+  geom_text(aes(label = paste0("(", pct_healthy, "%)")),
+            position = position_dodge(width = 0.6),
+            vjust = -0.35, size = 3.6, colour = "#555555") +
+  scale_fill_manual(values = c(Rural = RED, Urban = BLUE), name = NULL) +
+  scale_y_continuous(limits = c(0, 55), labels = PCT, breaks = seq(0, 50, 25)) +
+  labs(title    = "Poor access makes a rural area look healthier. In urban Wales it makes no difference.",
+       subtitle = "Number of areas ranked among the healthiest in Wales, out of each group",
+       x = NULL, y = "% ranked among the healthiest in Wales",
+       caption = paste0(
+         "Poor access = worst 20% of Wales for access to services (rank \u2264 383). ",
+         "Healthiest = best 20% of Wales for health (rank > 1,534).\n",
+         SRC, "  Rural gap = +28.1pp. Urban gap = -0.6pp (flat).")) +
   TH
 p10; sv(p10, "c10_health_and_access.png")
 
