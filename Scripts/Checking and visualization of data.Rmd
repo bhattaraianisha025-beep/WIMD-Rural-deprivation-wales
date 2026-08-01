@@ -139,7 +139,13 @@ p2 <- c2 %>%
          c2$weight[c2$side == "Urban deprivation higher"], "%."),
        x = "Share of the total WIMD score (%)", y = NULL,
        caption = "Weights: WIMD 2025 technical report. Side derived from the data.") +
-  TH + theme(axis.text.y = element_blank())
+  TH + theme(
+    axis.text.y  = element_blank(),                 # unchanged — y has no real labels
+    plot.title   = element_text(size = 16),          # was 13
+    plot.subtitle= element_text(size = 12.5),        # was 9.5
+    axis.text.x  = element_text(size = 11.5),        # was 9.5
+    axis.title.x = element_text(size = 12)           # was 9.5
+  )
 p2; sv(p2, "c2_weight_structure.png", h = 3.8)
 
 ```
@@ -228,7 +234,13 @@ p2b <- c2b %>%
          rural_name, " is rural: near-worst in Wales for access, near-best for everything else.\n",
          urban_name, " is urban: worst in Wales for income, employment, health and safety."),
        x = NULL, y = "WIMD rank (lower = more deprived)", caption = SRC) +
-  TH + theme(axis.text.x = element_text(angle = 20, hjust = 1))
+  TH + theme(
+    axis.text.y  = element_blank(),                 # unchanged — y has no real labels
+    plot.title   = element_text(size = 16),          # was 13
+    plot.subtitle= element_text(size = 12.5),        # was 9.5
+    axis.text.x  = element_text(size = 11.5),        # was 9.5
+    axis.title.x = element_text(size = 12)           # was 9.5
+  )
 p2b; sv(p2b, "c2b_two_communities.png", h = 5.5)
 
 ```
@@ -277,7 +289,13 @@ p4 <- c4 %>%
          " are rural — income carries 22%.\n",
          "Rural deprivation concentrates in the domains that count least."),
        x = NULL, y = "Number of areas (of 50 most deprived)", caption = SRC) +
-  TH
+  TH +theme(
+    axis.text.y  = element_blank(),                 # unchanged — y has no real labels
+    plot.title   = element_text(size = 16),          # was 13
+    plot.subtitle= element_text(size = 12.5),        # was 9.5
+    axis.text.x  = element_text(size = 11.5),        # was 9.5
+    axis.title.x = element_text(size = 12)           # was 9.5
+  )
 p4; sv(p4, "c4_top50_per_domain.png")
 
 ```
@@ -327,7 +345,13 @@ p8 <- c8 %>%
          c8$Overall[c8$la_name == "Ceredigion"], "% deprived overall."),
        x = NULL, y = "% of areas in worst 20% of Wales",
        caption = paste(SRC, "Worst 20% = rank ≤", T20, "of", format(N, big.mark = ","))) +
-  TH
+  TH + theme(
+    axis.text.y  = element_blank(),                 # unchanged — y has no real labels
+    plot.title   = element_text(size = 16),          # was 13
+    plot.subtitle= element_text(size = 12.5),        # was 9.5
+    axis.text.x  = element_text(size = 11.5),        # was 9.5
+    axis.title.x = element_text(size = 12)           # was 9.5
+  )
 p8; sv(p8, "c8_la_five_measures.png", h = 5.5)
 
 ```
@@ -385,7 +409,13 @@ p7 <- c7 %>%
          "Bar height = % of that group also in Wales' overall worst 20%.\n",
          "Income = 22% of the WIMD score. Access = 10%."),
        x = NULL, y = "% of this group in Wales' worst 20% overall", caption = SRC) +
-  TH
+  TH + theme(
+    axis.text.y  = element_blank(),                 # unchanged — y has no real labels
+    plot.title   = element_text(size = 16),          # was 13
+    plot.subtitle= element_text(size = 12.5),        # was 9.5
+    axis.text.x  = element_text(size = 11.5),        # was 9.5
+    axis.title.x = element_text(size = 12)           # was 9.5
+  )
 p7; sv(p7, "c7_mechanism.png", h = 5.3)
 
 
@@ -436,7 +466,13 @@ p5 <- c5 %>%
          "Rural deprivation, concentrated in access and housing, cannot lower the overall score enough."),
        x = NULL, y = "% of areas",
        caption = "Source: WIMD 2025 Deep-Rooted Deprivation; RUC 2021 (ONS).") +
-  TH + guides(fill = guide_legend(nrow = 2))
+  TH + theme(
+    axis.text.y  = element_blank(),                 # unchanged — y has no real labels
+    plot.title   = element_text(size = 16),          # was 13
+    plot.subtitle= element_text(size = 12.5),        # was 9.5
+    axis.text.x  = element_text(size = 11.5),        # was 9.5
+    axis.title.x = element_text(size = 12)           # was 9.5
+  )
 p5; sv(p5, "c5_twenty_year_tracking.png")
 
 ```
@@ -485,7 +521,10 @@ p11 <- c11 %>%
        x = "Number of communities", y = NULL,
        caption = paste0("Invisible = access rank ≤", T10,
                         " and overall rank > ", T20, ". ", SRC)) +
-  TH + theme(plot.subtitle = element_text(colour = RED, face = "bold"))
+  TH + theme(plot.subtitle = element_text(colour = RED, face = "bold", size = 12),   # was 9.5
+    plot.title    = element_text(size = 16),                                # was 13
+    axis.text     = element_text(size = 11.5),                            
+    axis.title    = element_text(size = 12)) 
 p11; sv(p11, "c11_invisible_communities.png", h = 6)
 
 ```
@@ -517,7 +556,13 @@ p3 <- c3 %>%
                          " rank positions lower on access than on its overall score."),
        x = NULL, y = "% of areas whose access rank is worse than their overall rank",
        caption = SRC) +
-  TH
+  TH + theme(
+    axis.text.y  = element_blank(),                 # unchanged — y has no real labels
+    plot.title   = element_text(size = 16),          # was 13
+    plot.subtitle= element_text(size = 12.5),        # was 9.5
+    axis.text.x  = element_text(size = 11.5),        # was 9.5
+    axis.title.x = element_text(size = 12)           # was 9.5
+  )
 p3; sv(p3, "c3_access_rank_gap.png")
 
 ```
@@ -607,7 +652,13 @@ p9 <- c9 %>%
          ru_bad, " of ", ru_n, " rural Ceredigion neighbourhoods do."),
        x = NULL, y = "Access rank (1 = most deprived, 1,917 = least deprived)",
        caption = SRC) +
-  TH
+  TH + theme(
+    axis.text.y  = element_blank(),                 # unchanged — y has no real labels
+    plot.title   = element_text(size = 16),          # was 13
+    plot.subtitle= element_text(size = 12.5),        # was 9.5
+    axis.text.x  = element_text(size = 11.5),        # was 9.5
+    axis.title.x = element_text(size = 12)           # was 9.5
+  )
 p9; sv(p9, "c9_within_ceredigion.png")
 
 
@@ -652,7 +703,13 @@ p10 <- c10 %>%
          "Poor access = worst 20% of Wales for access to services (rank \u2264 383). ",
          "Healthiest = best 20% of Wales for health (rank > 1,534).\n",
          SRC, "  Rural gap = +28.1pp. Urban gap = -0.6pp (flat).")) +
-  TH
+  TH + theme(
+    axis.text.y  = element_blank(),                 # unchanged — y has no real labels
+    plot.title   = element_text(size = 15),          # was 13
+    plot.subtitle= element_text(size = 12.5),        # was 9.5
+    axis.text.x  = element_text(size = 11.5),        # was 9.5
+    axis.title.x = element_text(size = 12)           # was 9.5
+  )
 p10; sv(p10, "c10_health_and_access.png")
 
 ```
