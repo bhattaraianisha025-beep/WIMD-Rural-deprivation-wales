@@ -77,3 +77,33 @@ This project uses only publicly available, aggregate LSOA-level data. No individ
 
 All datasets are publicly available under open licences (Open Government Licence, ONS Open Geography). Analytical code and outputs are version-controlled via a GitHub private repository, allowing RHC, the University to reuse and build on the work for educational and policy purposes; 
 authorship remains attributable to the student, with sources acknowledged. Safeguards include documenting licence terms and ensuring no re-identification from small-area statistics.
+
+## Repo structure
+WIMD-Rural-deprivation-wales/
+├── README.md
+├── LICENSE                    
+├── data/
+│   └── processed/
+│       └── master_dataset.csv 
+│    └── raw/
+│      ├─Rural_Urban_Classification_(2021)_of_LSOAs_in_EW
+│      ├─  welsh-index-of-multiple-deprivation-wimd-2025-
+│         data-underlying-deep-dooted-deprivation-analysis
+│      ├─ wimd-2025-index-and-domain-ranks-by-small-area
+│      ├─wimd-2025-index-and-domain-scores-by-small-area
+├── Presentation and report
+├── Scripts and outputs/
+│   ├── outputs/charts
+│    ├── Validation LSOA.rmd
+│    ├── explore rank data.rmd 
+│    ├── explore score data.rmd
+│    ├── explore drd data.rmd
+│    ├── explore RUC.rmd
+│    ├── explore .rmd
+│    ├── Master dataset.rmd
+│    ├── explore rural urban comparision.rmd
+│    ├── explore DRD-RU.rmd
+│    ├── explore domain gap.rmd
+│    ├── explore case study analysis.rmd
+│    └── Checking and visualization of data.rmd
+└─────────────────────────────────────
