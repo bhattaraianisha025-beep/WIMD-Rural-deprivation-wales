@@ -81,29 +81,41 @@ authorship remains attributable to the student, with sources acknowledged. Safeg
 ## Repo structure
 WIMD-Rural-deprivation-wales/
 ├── README.md
-├── LICENSE                    
+├── LICENSE                        # CC-BY-4.0 — data, figures, report
+├── LICENSE_CODE                   # MIT — R scripts
+├── .gitignore
+│
 ├── data/
+│   ├── raw/
+│   │   ├── wimd_2025_domain_ranks.ods
+│   │   ├── wimd_2025_domain_scores.ods
+│   │   ├── wimd_2025_deep_rooted_deprivation.ods
+│   │   └── ruc_2021_lsoa_classification.csv
 │   └── processed/
-│       └── master_dataset.csv 
-│    └── raw/
-│      ├─Rural_Urban_Classification_(2021)_of_LSOAs_in_EW
-│      ├─  welsh-index-of-multiple-deprivation-wimd-2025-
-│         data-underlying-deep-dooted-deprivation-analysis
-│      ├─ wimd-2025-index-and-domain-ranks-by-small-area
-│      ├─wimd-2025-index-and-domain-scores-by-small-area
-├── Presentation and report
-├── Scripts and outputs/
-│   ├── outputs/charts
-│    ├── Validation LSOA.rmd
-│    ├── explore rank data.rmd 
-│    ├── explore score data.rmd
-│    ├── explore drd data.rmd
-│    ├── explore RUC.rmd
-│    ├── explore .rmd
-│    ├── Master dataset.rmd
-│    ├── explore rural urban comparision.rmd
-│    ├── explore DRD-RU.rmd
-│    ├── explore domain gap.rmd
-│    ├── explore case study analysis.rmd
-│    └── Checking and visualization of data.rmd
-└─────────────────────────────────────
+│       └── master_dataset.csv
+│
+├── scripts/
+│   ├── 01_validation/
+│   │   └── Validation_LSOA.Rmd
+│   ├── 02_data_prep/
+│   │   ├── Step1_Explore_Ranks.Rmd
+│   │   ├── Step2_Explore_Scores.Rmd
+│   │   ├── Step3_Explore_DRD.Rmd
+│   │   ├── Step4_Explore_RUC.Rmd
+│   │   └── Step5_Master_Dataset.Rmd
+│   ├── 03_analysis/
+│   │   ├── Stage4_Rural_Urban_Comparison.Rmd
+│   │   ├── Stage5_DRD_Rural_Urban.Rmd
+│   │   ├── Stage6_Domain_Gap_Assessment.Rmd
+│   │   └── Stage7_Case_Studies.Rmd
+│   └── 04_visualisation/
+│       └── Visualisations_All.Rmd
+│
+├── outputs/
+│   └── charts/                    # all c1_... to c12_... PNGs
+│
+├── report/
+│   └── WIMD_Rural_Deprivation_Report.docx
+│
+└── presentation/
+    └── WIMD_Presentation_Final.pptx
