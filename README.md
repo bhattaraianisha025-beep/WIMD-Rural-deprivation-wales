@@ -79,12 +79,12 @@ All datasets are publicly available under open licences (Open Government Licence
 authorship remains attributable to the student, with sources acknowledged. Safeguards include documenting licence terms and ensuring no re-identification from small-area statistics.
 
 ## Repo structure
+
+```
 WIMD-Rural-deprivation-wales/
 ├── README.md
-├── LICENSE                        # CC-BY-4.0 — data, figures, report
-├── LICENSE_CODE                   # MIT — R scripts
-├── .gitignore
-│
+├── LICENSE
+├── LICENSE_CODE
 ├── data/
 │   ├── raw/
 │   │   ├── wimd_2025_domain_ranks.ods
@@ -93,7 +93,6 @@ WIMD-Rural-deprivation-wales/
 │   │   └── ruc_2021_lsoa_classification.csv
 │   └── processed/
 │       └── master_dataset.csv
-│
 ├── scripts/
 │   ├── 01_validation/
 │   │   └── Validation_LSOA.Rmd
@@ -110,12 +109,10 @@ WIMD-Rural-deprivation-wales/
 │   │   └── Stage7_Case_Studies.Rmd
 │   └── 04_visualisation/
 │       └── Visualisations_All.Rmd
-│
 ├── outputs/
-│   └── charts/                    # all c1_... to c12_... PNGs
-│
+│   └── charts/
 ├── report/
 │   └── WIMD_Rural_Deprivation_Report.docx
-│
 └── presentation/
     └── WIMD_Presentation_Final.pptx
+```
