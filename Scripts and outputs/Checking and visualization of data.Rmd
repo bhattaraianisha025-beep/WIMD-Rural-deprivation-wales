@@ -645,7 +645,7 @@ p9 <- c9 %>%
   geom_jitter(width = 0.12, height = 0, size = 3.2, alpha = 0.85) +
   scale_colour_manual(values = c("Aberystwyth (town)" = BLUE, "Rural Ceredigion" = RED), guide = "none") +
   scale_y_continuous(limits = c(0, N), labels = scales::comma) +
-  labs(title    = "Inside one local authority: town and hinterland are far apart on access",
+  labs(title    = "Inside one local authority: town and rural areas are far apart on access",
        subtitle = paste0(
          "Each dot is one real neighbourhood. The shaded band marks the worst 20% for access in Wales.\n",
          ab_bad, " of ", ab_n, " Aberystwyth neighbourhoods fall in that band. ",
