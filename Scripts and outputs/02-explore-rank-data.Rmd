@@ -1,10 +1,11 @@
 ---
 title: "Explore WIMD 2025 rank data"
-author: 'Student ID: 52533934'
+author: 'Anisha Bhattarai'
 date: "2026-06-26"
 output: html_document
 ---
-
+<!--
+This script becomes familiar with rank data, the eight domains, correlation , exploration that shapes research question for later analysis-->
 
 ```{r setup, message= FALSE, warning=FALSE}
 library(tidyverse)
@@ -12,10 +13,9 @@ library(readODS)
 library(janitor)
 ```
 
-
-
+## Step 1- Load and clean rank data
 ```{r read data}
-# Load rank data´- skip 2 rows and drop empty 13th col
+# skip 2 rows and drop empty 13th col
 ranks <- read_ods("../data/raw/wimd-2025-index-and-domain-ranks-by-small-area.ods",
            sheet = "WIMD_2025_ranks", skip = 2) %>% clean_names()
 ranks <- ranks %>% mutate(across(4:12, as.numeric))
@@ -23,16 +23,16 @@ ranks <- ranks %>% filter(!is.na(ranks[[1]]))
 cat("Loaded:", nrow(ranks), "rows |", ncol(ranks), "columns\n")
 names(ranks)
 
-
 ```
 
-
+## Step 2- Values missing and domainwise correlation
 ```{r missing values and correlation}
 # All domains  zero missing values
 colSums(is.na(ranks[4:12]))
 round(cor(ranks[4:12],use = "complete.obs"),2)  # domains correlation with overall WIMD rank
 ```
 
+## Step 3- Domain worst for each LSOA
 ```{r worst domain}
 #Lowest rank = most deprived
 domain_cols <- names(ranks)[5:12]
@@ -48,11 +48,9 @@ ranks %>%
   mutate(pct = round(100 * n / sum(n), 1))
 ```
 
-
-
-
+## Step 4- Four local authorities 
 ```{r summary}
-#LA-levels medians for case
+# rough look at four authorities visible as interesting contrast
 ranks %>%
   filter(local_authority_name_eng %in%
            c("Powys", "Ceredigion", "Pembrokeshire", "Swansea")) %>%

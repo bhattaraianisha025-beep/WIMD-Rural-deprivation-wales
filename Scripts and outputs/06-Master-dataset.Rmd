@@ -1,9 +1,10 @@
 ---
-title: "Masterdata"
-author: 'Student ID: 52533934'
+title: "Build Masterdata"
+author: 'Anisha Bhattarai'
 date: "2026-07-01"
 output: html_document
 ---
+<!-- This script is the key for whole project, joins four dataset into one dataset(master_dataset.csv) -->
 
 ```{r setup, message=FALSE, warning=FALSE}
 library(tidyverse)
@@ -12,7 +13,7 @@ library(readODS)
 
 ```
 
-
+## Step 1- Load WIMD 2025 rank dataset
 ```{r load_all_data}
 ranks_WIMD <- read_ods(
   "../data/raw/wimd-2025-index-and-domain-ranks-by-small-area.ods",
@@ -31,7 +32,9 @@ ranks_WIMD <- read_ods(
          physical_env_rank = physical_environment)
 
 ```
-```{r}
+
+## Step 2-Load WIMD 2025 Score dataset
+```{rload_scores}
 scores_WIMD <- read_ods(
   "../data/raw/wimd-2025-index-and-domain-scores-by-small-area.ods",
   sheet = "Data",
@@ -47,10 +50,10 @@ scores_WIMD <- read_ods(
          housing_score = housing, community_safety_score = community_safety,
          physical_env_score = physical_environment)
 
-
 ```
 
-```{r}
+## Step 3- Load Deep-Rooted deprivation dataset
+```{r load_drd}
 drd_history <- c("wimd_2025_rank", "wimd_2019_rank", "wimd_2014_rank",
                    "wimd_2011_rank", "wimd_2008_rank", "wimd_2005_rank")
 
@@ -74,7 +77,8 @@ drd_WIMD <- read_ods(
 
 ```
 
-```{r}
+## Step 4- Load ONS Rural urban Classification 2021
+```{rload_ruc}
 ruc_file <- list.files("../data/raw", pattern = "Rural_Urban", full.names = TRUE)
 
 ruc_WIMD <- read_csv(ruc_file[1]) %>%
@@ -83,15 +87,16 @@ ruc_WIMD <- read_csv(ruc_file[1]) %>%
   select(lsoa_code = lsoa21cd, ruc_code = ruc21cd,
          ruc_name = ruc21nm, rural_urban = urban_rural_flag)
 
-
 ```
+
+## Step 5- Join four dataset and derive 2 "rank gap" measure
 ```{r build_master_data}
 master <- ranks_WIMD %>%
   left_join(scores_WIMD, by = "lsoa_code") %>%
   left_join(drd_WIMD,    by = "lsoa_code") %>%
   left_join(ruc_WIMD,    by = "lsoa_code") %>%
   mutate(
-    # Negative gap = LSOA more deprived on that domain than overall rank shows
+    # Negative gap = LSOA more deprived on that domain than overall rank shows "hidden deprivation"
     access_rank_gap  = access_rank  - wimd_2025_rank,
     housing_rank_gap = housing_rank - wimd_2025_rank,
     rural_urban  = factor(rural_urban, levels = c("Rural","Urban")),
@@ -106,17 +111,18 @@ cat("Master:", nrow(master), "rows |", ncol(master), "cols\n")
 
 ```
 
-
+## Step 6- Validation before saving master dataset
 ```{r validate_data}
-# check before stage 4 validating
+# check before validating
 cat("Duplicates:", sum(duplicated(master$lsoa_code)), "(expected 0)\n")
 cat("Rural:", sum(master$rural_urban=="Rural"),
     "| Urban:", sum(master$rural_urban=="Urban"), "\n")
 na_check <- colSums(is.na(master))
 print(na_check[na_check > 0])
  
-
 ```
+
+## Step 7- Save master dataset 
 ```{r save}
 write_csv(master, "../data/processed/master_dataset.csv")
 cat("Saved to ../data/processed/master_dataset.csv\n")
@@ -124,12 +130,9 @@ cat("Saved to ../data/processed/master_dataset.csv\n")
 
 ```
 
-
-
-
-
-
-```{r}
+## Step 8- Checking final structure
+```{r glimpse_final}
 glimpse(master)
 ```
 
+<!-- The file, data/processed/master_dataset.csv, is single source before further analysis step -->

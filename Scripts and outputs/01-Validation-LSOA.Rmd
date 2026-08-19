@@ -1,29 +1,33 @@
 ---
-title: "Validation LSOA"
-author: 'Student ID: 52533934'
+title: "Validation"
+author: 'Anisha Bhattarai'
 date: "2026-06-21"
 output: html_document
 ---
+
+<!--
+First Script: Result of this project rely on four official welsh Government datasets(WIMD ranks, WIMD scores, Deep-Rooted Deprivation, ONS Rural-Urban Classification)refer to 1917 LSOAs, with no missing and duplication-->
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-```{r}
+## Step 1- Load libraries
+```{r_load_packages}
 library(tidyverse)
 library(readODS)
 library(janitor)
 ```
 
-
-```{r}
+## Step 2- confirmation of directory and raw files
+```{r_check_environment}
 cat("Libraries loaded\n")
 cat("Working directory:", getwd(), "\n")
 cat("Files in data/raw:\n")
 print(list.files("data/raw"))
 ```
 
-
+## Step 3-Load four raw datasets
 ```{r}
 ranks_raw <- read_ods(
   "../data/raw/wimd-2025-index-and-domain-ranks-by-small-area.ods",
@@ -31,8 +35,6 @@ ranks_raw <- read_ods(
   skip = 2
 )
 ```
-#
-
 
 ```{r}
 scores_WIMD <- read_ods(
@@ -41,7 +43,6 @@ scores_WIMD <- read_ods(
   skip = 3
 )
 ```
-##
 
 ```{r}
 drd_WIMD <- read_ods(
@@ -50,14 +51,17 @@ drd_WIMD <- read_ods(
   skip = 4
 )
 ```
+
 ```{r}
 ruc_files <- list.files("../data/raw", pattern = "Rural", full.names = TRUE)
 ruc_files
 ```
+
 ```{r}
 ruc_WIMD <- read_csv(ruc_files[1], show_col_types = FALSE) %>% clean_names()
 ```
 
+## Restriction to Welsh LSOAs -file cover England and Wales
 ```{r}
 ruc_lsoa_col <- names(ruc_WIMD)[1]
 ruc_wales <- ruc_WIMD %>% filter(str_starts(.data[[ruc_lsoa_col]], "W"))
@@ -65,7 +69,9 @@ cat("Welsh LSOAs in RUC:", nrow(ruc_wales), "\n")
 head(ruc_wales, 3)
 ```
 
-```{r}
+## Step 4-WIMD own published decile/quantile grouping
+```{r load_groups}
+# independent cross check for own rank based grouping later disagree WIMD published groups would create join problem 
 groups_data_WIMD <- read_ods(
   "../data/raw/wimd-2025-index-and-domain-ranks-by-small-area.ods",
   sheet = "Deciles_quintiles_quartiles",
@@ -76,8 +82,8 @@ cat("Groups:", nrow(groups_data_WIMD), "rows x", ncol(groups_data_WIMD), "column
 head(groups_data_WIMD, 3)
 ```
 
-
-```{r}
+## Step 5-Five data sources agree on 1917 LSOAs
+```{r_check_count}
 ranks_lsoas <- unique(ranks_raw[[1]])
 scores_lsoas <- unique(scores_WIMD[[1]])
 drd_lsoas <- unique(drd_WIMD[[3]][str_starts(drd_WIMD[[3]], "W01")])
@@ -92,15 +98,18 @@ cat("Groups:", length(groups_lsoas), "\n")
 cat("\nAll should be 1917\n")
 ```
 
-```{r}
+## Step 6-LSOAs codes appear in each file
+```{r check_mismatch}
+# Check actual codes matching in 1917 LSOAs
 cat("Ranks vs RUC mismatch:", length(setdiff(ranks_lsoas, ruc_lsoas)), "\n")
 cat("Scores vs RUC mismatch:", length(setdiff(scores_lsoas, ruc_lsoas)), "\n")
 cat("DRD vs RUC mismatch:", length(setdiff(drd_lsoas, ruc_lsoas)), "\n")
 cat("\nAll should be 0\n")
 ```
 
-
-```{r}
+## Step 7-Clean whitespace and blank rows
+```{r clean_whitespace}
+# ODS file carrying space and trim before join
 ranks_raw[[1]] <- str_trim(ranks_raw[[1]])
 scores_WIMD[[1]] <- str_trim(scores_WIMD[[1]])
 drd_WIMD[[3]] <- str_trim(drd_WIMD[[3]])
@@ -114,8 +123,8 @@ scores_WIMD <- scores_WIMD %>% filter(!is.na(scores_WIMD[[1]]))
 drd_WIMD <- drd_WIMD %>% filter(!is.na(drd_WIMD[[3]]))
 ```
 
-
-```{r}
+## Step 8-final duplicates and missing values
+```{r final_validation}
 ranks_raw <- ranks_raw %>% mutate(across(4:12, as.numeric))
 scores_WIMD <- scores_WIMD %>% mutate(across(4:12, as.numeric))
 drd_WIMD <- drd_WIMD %>% mutate(across(5:10, ~as.numeric(str_remove_all(.x, "[^0-9]"))))

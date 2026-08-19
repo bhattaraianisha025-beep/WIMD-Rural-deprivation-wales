@@ -1,10 +1,12 @@
 ---
 title: "explore drd"
-author: 'Student ID: 52533934'
+author: 'Anisha Bhattarai'
 date: "2026-06-30"
 output: html_document
 ---
 
+<!-- 
+WIMD has published six times since 2005(2005, 2008, 2011, 2014, 2019, 2025) which tracks top 50 most deprived areas on those six releases. It explores dataset alone and ahead of joining to rural urban status -->
 ```{r setup,message=FALSE,warning=FALSE}
 library(tidyverse)
 library(janitor)
@@ -12,8 +14,8 @@ library(readODS)
 
 ```
 
-
-```{r}
+## Step 1- Loading and cleaning DRD  data
+```{r load_drd_data}
 drd_WIMD <- suppressWarnings(read_ods(
   "../data/raw/welsh-index-of-multiple-deprivation-wimd-2025-data-underlying-deep-dooted-deprivation-analysis.ods",
   sheet = "Data",
@@ -21,7 +23,7 @@ drd_WIMD <- suppressWarnings(read_ods(
   clean_names() %>%
   filter(!is.na(.[[3]])) # col 3 = lsoa_code
 cat("Rows:", nrow(drd_WIMD), "| Cols:", ncol(drd_WIMD), "\n")
-# Historic rank has "[x]" for suppressed value(boundary change)
+# Historic rank cols use  "[x]" for suppressed value(boundary change in WIMD publications )
 # str_remove_all("^0-9]") strip non numeric:"[x]"-> NA
 rank_cols <- names(drd_WIMD)[5:10]
 drd <- drd_WIMD %>%
@@ -30,26 +32,19 @@ drd <- drd_WIMD %>%
 
 ```
 
+## Step 2- Persistent four categories: Never/Sometimes/Often/ Deep-rooted
 ```{r category}
 # four persistent categories- LSOAs in each
 drd %>% count(category_of_deep_rooted_deprivation, sort = TRUE)
 ```
 
+## Step 3- Check suppressed values as boundary change not missing data
 ```{r suppressed}
-# suppressed value by year- boundary change no missing data
-colSums(is.na(drd[rank_cols]))
-
-```
-
-```{r }
-
-```
-
-```{r}
 cat("Suppressed/missing values per rank column:\n")
-colSums(is.na(drd_WIMD[ranks_cols]))
+colSums(is.na(drd[ranks_cols]))
 ```
 
+## Step 4- Persistently deprived areas in local authorities
 ```{r persistent}
 # LA persistently deprived LSOAs
 drd %>%
@@ -58,12 +53,12 @@ drd %>%
   count(local_authority, category_of_deep_rooted_deprivation) %>%
   pivot_wider(names_from = category_of_deep_rooted_deprivation,
               values_from = n, values_fill = 0)
-
     
 ```
 
+## Step 5- Rank volatility: areas rank move over 20 years
 ```{r volatility}
-# rank volatility= SD across all variable iteration
+# rank volatility= SD across all 6 publication of WIMD
 drd <- drd %>%
   rowwise() %>%
   mutate(rank_sd = sd(c_across(all_of(rank_cols)), na.rm = TRUE)) %>%
@@ -71,58 +66,17 @@ drd <- drd %>%
 
 summary(drd$rank_sd)
 
-
 ```
 
+## Step 6- Most stable rank areas 
 ```{r most_stable}
-# most stable should be deep rooted LSOA
+# most stable should be deep rooted LSOA. lowest rank_sd barely moves 
 drd %>%
   arrange(rank_sd) %>%
   select(local_authority, lower_layer_super_output_area_lsoa,
          category_of_deep_rooted_deprivation, rank_sd) %>%
   head(10)
 
-
-```
-
-
-
-
-```{r}
-rank_cols <- c("wimd_2025_rank", "wimd_2019_rank", "wimd_2014_rank",
-               "wimd_2011_rank", "wimd_2008_rank", "wimd_2005_rank")
-
-drd_WIMD <- drd_WIMD %>%
-  rowwise() %>%
-  mutate(rank_sd = sd(c_across(all_of(rank_cols)), na.rm = TRUE)) %>%
-  ungroup()
-
-cat("Volatility summary (SD of WIMD ranks across all available iterations):\n")
-summary(drd_WIMD$rank_sd)
-
-```
-
-```{r}
-drd_WIMD %>%
-  arrange(desc(rank_sd)) %>%
-  select(local_authority, lower_layer_super_output_area_lsoa, rank_sd) %>%
-  head(10)
-
-```
-```{r}
-drd_WIMD %>%
-  arrange(rank_sd) %>%
-  select(local_authority, lower_layer_super_output_area_lsoa, rank_sd) %>%
-  head(10)
-
-```
-
-```{r}
-drd_WIMD %>%
-  arrange(rank_sd) %>%
-  select(local_authority, lower_layer_super_output_area_lsoa,
-         category_of_deep_rooted_deprivation, rank_sd) %>%
-  head(10)
 
 ```
 

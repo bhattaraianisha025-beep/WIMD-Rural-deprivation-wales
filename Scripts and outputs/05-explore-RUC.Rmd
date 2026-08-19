@@ -1,17 +1,19 @@
 ---
-title: "explore RUC"
-author: 'Student ID: 52533934'
+title: "Explore RUC data"
+author: 'Anisha Bhattarai'
 date: "2026-06-30"
 output: html_document
 ---
-
+<!-- This Script explore ONS Rural Urban classification 2021
+-->
 ```{r setup, message=FALSE, warning=FALSE}
 library(tidyverse)
 library(readODS)
 library(janitor)
 ```
 
-```{r}
+## Step 1- Load RUC file, Welsh LSOAs only
+```{r load_ruc}
 ruc_files <- list.files("../data/raw", pattern = "Rural", full.names = TRUE)
 ruc <- read_csv(ruc_files[1]) %>%
   clean_names() %>%
@@ -21,24 +23,27 @@ cat("Welsh LSOAs:", nrow(ruc), "\n")
 names(ruc)
 
 ```
+
+## Step 2- Basic Rural/Urban split
 ```{r split_binary}
-# rural urban split
 ruc %>%
   count(urban_rural_flag) %>%
   mutate(pct = round(100 * n / sum(n), 1))
 
 ```
 
+## Step 3- Six RUC categories 
 ```{r categories}
-# all 6 category- remoteness within rural
+# RUC 6 categories: Urban/Larger, rural/ smaller rural each area split nearer to further from major city 
 ruc %>%
   count(ruc21nm, urban_rural_flag) %>%
   arrange(urban_rural_flag, desc(n))
 
 ```
 
+## Join WIMD local authority names and find most rural LAs 
 ```{r la_rural_pct}
-# LAs most rural, join rank to get LA names
+# LAs most rural, join rank to get LA names by joining to rank data
 ranks_la <- read_ods(
   "../data/raw/wimd-2025-index-and-domain-ranks-by-small-area.ods",
   sheet = "WIMD_2025_ranks", skip = 2
@@ -62,6 +67,7 @@ ruc %>%
 
 ```
 
+## Step 5 - within rural area how many "further from" and "nearer to" a town
 ```{r remoteness_split}
 # within rural, further vs near from major town
 ruc %>%
@@ -74,9 +80,8 @@ ruc %>%
 
 ```
 
-
-
-```{r}
+## Step 6- Four local authority RUC category breakdown
+```{r case_study}
 ranks_la %>%
   filter(local_authority_name_eng %in% c("Powys", "Ceredigion", "Pembrokeshire", "Swansea")) %>%
   count(local_authority_name_eng, lsoa_code) %>%
@@ -86,9 +91,4 @@ ranks_la %>%
     values_fill = 0
   )
 ```
-
-
-
-
-
 

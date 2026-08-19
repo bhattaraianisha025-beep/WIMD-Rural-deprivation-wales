@@ -1,9 +1,11 @@
 ---
-title: "WIMD 2025 Access data explore"
-author: 'Student ID: 52533934'
+title: "WIMD 2025 Score data explore"
+author: 'Anisha Bhattarai'
 date: "2026-06-30"
 output: html_document
 ---
+
+<!--This script exist as WIMD publish two version rank(1-1917)used in rest of the project and score(standardised 0-100). It checks score data with rank data, its sanity check -->
 
 ```{r setup, message=FALSE, warning=FALSE}
 library(tidyverse)
@@ -11,6 +13,7 @@ library(janitor)
 library(readODS)
 ```
 
+## Step 1- Load domain scores
 ```{r read data}
 scores <- read_ods(
   "../data/raw/wimd-2025-index-and-domain-scores-by-small-area.ods",
@@ -25,8 +28,9 @@ cat("Loaded:", nrow(scores), "rows |", ncol(scores), "\n")
 
 ```
 
+## Step 2: Score range by domains
 ```{r scores_ranges}
-# all domains are standarised 0-100 range looks same and cannot be discriminated between domain 
+# All domains are standarised 0-100 range looks same and cannot be discriminated between domain 
 scores  %>%
   pivot_longer(4:12, names_to = "domain",values_to = "score") %>%
   group_by(domain)%>%
@@ -37,6 +41,8 @@ scores  %>%
     .groups = "drop"
   )
 ```
+
+## Step 3-Domain highest(most deprived)score per LSOA
 ```{r worst_score}
 # domain with highest score most deprived per LSOA
 #capture lsoa_col name before pivot for avoiding reference error
@@ -54,10 +60,7 @@ scores %>%
   
 ```
 
-
-
-
-
+## Step 4- Domain-domain correlation
 ```{r score_correlations}
 # score confirm same pattern as rank
 round(cor(scores[4:12], use = "complete.obs"), 2)
