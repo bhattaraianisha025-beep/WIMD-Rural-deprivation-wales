@@ -53,25 +53,25 @@ The analysis uses Welsh Government guidance on interpretation of WIMD
 
 ## Methods and Analysis :
 The analysis follows sequence:
-*01-05- Understanding and Validation of data*
+### Step 1- *01-05- Understanding and Validation of data*
 The first 5 scripts examine four raw datasets individually for joiniing and exploration of analysis
 •	01-Validation_LSOA.Rmd — validation of four datasets and LSOA identifiers
 •	02_Explore_Ranks.Rmd — explores WIMD domain and overall ranks
 •	03_Explore_Scores.Rmd — explores WIMD domain scores
 •	04_Explore_DRD.Rmd — explores 20-year Deep-Rooted Deprivation data
 •	05_Explore_RUC.Rmd — explores the rural/urban classification
-*06- Construct master dataset*
+### Step 2- *06- Construct master dataset*
 After building master dataset from all four dataset joining by LSOAs. From this point , analysis uses only master dataset
-*07-10- Actual Analysis*
-**Domain Comparision**
+### Step 3-*07-10- Actual Analysis*
+- **Domain Comparision**
 Compares rural and urban across all eight domains of WIMD by Mann-Whitney U test and effect sizes.
-**Weight-Gap Analysi**
+- **Weight-Gap Analysi**
 Examine domain weights and investigate the mechanism across rural/urban difference.
-**20 Years tracking**
+- **20 Years tracking**
 Tracking of 20 years persistent deprivation in rural and rban
-**Case Studies**
+- **Case Studies**
 Test pattern in four local authorities(Powys, Ceredigion, Pembrokshire, Swansea) and detail neighbourhood analysis of Ceredigion
-*11-Visualization*
+### Step 4- *11-Visualization*
 Here recomputing of all results and final charts are produced from master dataset
 
 
