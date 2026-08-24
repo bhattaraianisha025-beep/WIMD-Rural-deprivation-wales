@@ -171,9 +171,8 @@ This project uses only publicly available, aggregate LSOA-level data. No individ
 
 
 ## Citation of work
->Bhattarai, A. (2026). *Does WIMD 2025 Adequately Capture Rural Deprivation
-in Wales?*https://github.com/<your-usernam>/WIMD-Rural-deprivation-wales
-
+>Bhattarai, A. (2026). *Evaluating WIMD 2025 as a Measure of Rural Deprivation in Wales*
+in Wales?*https://github.com/bhattaraianisha025-beep/WIMD-Rural-deprivation-wales.git*
 ## Acknowledgements
 Placement Host: Dr. Veronica Rasic
 Produced as the 10 week placement project of M.Sc. Health Data Science Programme, University of Aberdeen
