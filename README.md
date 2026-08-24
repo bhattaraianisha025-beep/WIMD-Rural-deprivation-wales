@@ -34,14 +34,15 @@ To evaluate whether WIMD 2025 domain weighting structure adequately capture rura
 
 ## Data Sources
 
-All data used in this project is publicly available under the Open Government Licence v3.0, aggregate-level (LSOA), and contains no individual or identifiable information.
+All four datasets are included in `data/raw/`.Confirm dataset from below sources:
 
 | Dataset | Provider | Licence | Link |
 |---|---|---|---|
-| WIMD 2025 — index and domain ranks | Welsh Government | OGL v3.0 | [GOV.WALES](https://www.gov.wales/welsh-index-multiple-deprivation-2025)|
-| WIMD 2025 — index and domain scores | Welsh Government | OGL v3.0 | [GOV.WALES](https://www.gov.wales/welsh-index-multiple-deprivation-2025)|
-| WIMD 2025 — deep-rooted deprivation data | Welsh Government | OGL v3.0 | [GOV.WALES](https://www.gov.wales/welsh-index-multiple-deprivation-2025)|
-| Rural Urban Classification 2021, LSOAs in England & Wales | ONS | OGL v3.0 | [ONS Open Geography Portal](https://geoportal.statistics.gov.uk/datasets/ons::rural-urban-classification-2021-of-lsoas-in-ew/explore)|
+| WIMD 2025 — index and domain ranks | Welsh Government | [GOV.WALES](https://www.gov.wales/welsh-index-multiple-deprivation-2025)|
+| WIMD 2025 — index and domain scores | Welsh Government | [GOV.WALES](https://www.gov.wales/welsh-index-multiple-deprivation-2025)|
+| WIMD 2025 — deep-rooted deprivation data | Welsh Government | [GOV.WALES](https://www.gov.wales/welsh-index-multiple-deprivation-2025)|
+| Rural Urban Classification 2021, LSOAs in England & Wales | [ONS Open Geography Portal](https://geoportal.statistics.gov.uk/datasets/ons::rural-urban-classification-2021-of-lsoas-in-ew/explore)|
+All © Crown copyright and database right, Open Government Licence v3.0, aggregate-level (LSOA), and contains no individual or identifiable information.
 
 ## Constraints (per Welsh Government):
 The analysis uses Welsh Government guidance on interpretation of WIMD
@@ -96,7 +97,7 @@ git clone https://github.com/bhattaraianisha025-beep/WIMD-Rural-deprivation-wale
 cd WIMD-Rural-deprivation-wales```
 
 2. Add raw datasets
-Place four source files in: ..data/raw/ using filenames:
+Raw data included in: "data/raw/" using filenames:
 - wimd-2025-index-and-domain-ranks-by-small-area.ods
 - wimd-2025-index-and-domain-scores-by-small-area.ods
 - welsh-index-of-multiple-deprivation-wimd-2025-data-underlying-deep-dooted-deprivation-analysis.ods

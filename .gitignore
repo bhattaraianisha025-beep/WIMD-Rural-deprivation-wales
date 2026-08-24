@@ -8,9 +8,6 @@
 *_files/
 *_cache/
 
-# Raw data (download from sources listed in README)
-data/raw/
-
 # Assessment documents (academic submissions — not for public repo)
 docs/assessment2/
 docs/assessment3/
