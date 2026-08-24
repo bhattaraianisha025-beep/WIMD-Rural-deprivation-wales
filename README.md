@@ -4,7 +4,7 @@
 ## Project Background
 
 Wales Index of Multiple Deprivation(WIMD) is a official statistics used by Welsh Government for policy and funding.It ranks all 1917 small areas(LSOAs) in wales from 1 (most deprived) to 1917 (least deprived)
-This project examine whether WIMD 2025 combines its eight deprivation domain adequately capture deprivation in rural Welsh communities, and examines the implications for rural-proofing policy in Wales. It is produced as part of a 10-week professional placement with Rural Health Compass (RHC).This analysis doesnot question accuracy of WIMD’s underlying domain data.
+This project examine whether WIMD 2025 combines its eight deprivation domain adequately capture deprivation in rural Welsh communities, and examines the implications for rural-proofing policy in Wales. It is produced as part of a 10-week professional placement with Rural Health Compass (RHC).This analysis doesnot question accuracy of WIMD’s underlying domain data. WIMD DOMAIN rank are official goverment statistics
 
 ## Project Details
 
@@ -12,7 +12,7 @@ This project examine whether WIMD 2025 combines its eight deprivation domain ade
 - **Organisation:** [Rural Health Compass (RHC)](https://ruralhealthcompass.com/)
 - **Host Supervisor:** Dr Veronika Rasic
 - **University:** University of Aberdeen — MSc Health Data Science
-- **Period:** 15 June – 27 August 2026
+- **Period:** June – August 2026
 
 ## Team Context
 
@@ -42,8 +42,8 @@ All data used in this project is publicly available under the Open Government Li
 | WIMD 2025 — index and domain scores | Welsh Government | OGL v3.0 | [GOV.WALES](https://www.gov.wales/welsh-index-multiple-deprivation-2025)|
 | WIMD 2025 — deep-rooted deprivation data | Welsh Government | OGL v3.0 | [GOV.WALES](https://www.gov.wales/welsh-index-multiple-deprivation-2025)|
 | Rural Urban Classification 2021, LSOAs in England & Wales | ONS | OGL v3.0 | [ONS Open Geography Portal](https://geoportal.statistics.gov.uk/datasets/ons::rural-urban-classification-2021-of-lsoas-in-ew/explore)|
-## Methodology
 
+## Constraints (per Welsh Government):
 The analysis uses Welsh Government guidance on interpretation of WIMD
 - WIMD is relative measure of deprivation in Wales
 - Rank doesnot measure absolute level of deprivation
@@ -75,8 +75,6 @@ Here recomputing of all results and final charts are produced from master datase
 
 
 ## Results
-
-
 - **19% vs 81%** - Rural wales scores worse in(Access and Housing domain) carrying only 19% of total WIMD weight whereas urban Wales found worse carrying 81%. 
 - **50 of 50** - 50 most deprived areas in Wales are Rural which has 10% of score of overall
 - **87.9% vs 1.3%** - Rural areas deprived on income are visible as deprived overall rank whereas rural LSOAs deprived on access almost never appear 
@@ -93,23 +91,32 @@ Here recomputing of all results and final charts are produced from master datase
 # Reproducing Analysis
 
 1. Clone repository
-git clone https://github.com/<your-username>/WIMD-Rural-deprivation-wales.git
-cd WIMD-Rural-deprivation-wales
+```bash 
+git clone https://github.com/bhattaraianisha025-beep/WIMD-Rural-deprivation-wales.git
+cd WIMD-Rural-deprivation-wales```
 
 2. Add raw datasets
-Place four source files in: ..data/raw/ using filenames by the Scripts
+Place four source files in: ..data/raw/ using filenames:
+- wimd-2025-index-and-domain-ranks-by-small-area.ods
+- wimd-2025-index-and-domain-scores-by-small-area.ods
+- welsh-index-of-multiple-deprivation-wimd-2025-data-underlying-deep-dooted-deprivation-analysis.ods
+- Rural_Urban_Classification_(2021)_of_LSOAs_in_EW.csv
 
 3. Run complete analysis
-Open the project in Rstudio and run: 
-source("run_all.R")
-This runs all 11 scripts in sequence, create master dataset, produce charts
+Open `WIMD-Rural-deprivation-wales.Rproj` in RStudio
+— double-click the `.Rproj` file itself, not just the folder and 
+run: ```r source("Run_all.R") ``` This runs all 11 scripts in sequence, create master dataset, produce charts
+
+# Environment
+Built in **R / RStudio** for data cleaning,analysis and visualization, version-controlled with **Git/GitHub**.
 
 # Required R packages
 install.packages("tidyverse")
 install.packages("readODS")
 install.packages("janitor")
 install.packages("scales")
-install.package(rmarkdown)
+install.packages("rmarkdown")
+install.packages("here")
 
 **Structure of Repository**
 ```
@@ -119,6 +126,8 @@ WIMD-Rural-deprivation-wales/
 ├── LICENSE_CODE                     # MIT — R scripts
 ├── .gitignore
 ├── .gitattributes
+├──WIMD-Rural-deprivation-wales.Rproj   # Open this first
+├──.here                                # Project-root marker
 ├── Run_all.R                     # runs each script in order
 ├── sessionInfo.txt                  
 │
@@ -148,12 +157,6 @@ WIMD-Rural-deprivation-wales/
     └── Final Presentation for Rural Health Compass.pptx
 ```
 
-
-## Tools
-
-- **R** (RStudio) — data cleaning, analysis and visualisation
-- **Git/GitHub** — version control and reproducibility
-
 ## Ethics and Data Governance
 
 This project uses only publicly available, aggregate LSOA-level data. No individual-level or identifiable data is processed. Formal NHS ethics approval is not required. The project follows University of Aberdeen research ethics guidance for secondary data analysis.
@@ -172,6 +175,7 @@ This project uses only publicly available, aggregate LSOA-level data. No individ
 ## Citation of work
 >Bhattarai, A. (2026). *Evaluating WIMD 2025 as a Measure of Rural Deprivation in Wales*
 in Wales?*https://github.com/bhattaraianisha025-beep/WIMD-Rural-deprivation-wales.git*
+
 ## Acknowledgements
 Placement Host: Dr. Veronica Rasic
 Produced as the 10 week placement project of M.Sc. Health Data Science Programme, University of Aberdeen
