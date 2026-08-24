@@ -5,7 +5,8 @@ date: "2026-07-04"
 output: html_document
 ---
 <!-- This script of DRD data track each LSOA appeared in top 50 most deprived areas across six WIMD publication since 2005, invisible communities chart become central to policy recommendation-->
-```{r setup,message=FALSE, warning=FALSE}
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
 library(tidyverse)
 library(janitor)
 ```

@@ -1,5 +1,5 @@
 ---
-title: "explore drd"
+title: "EXPLORE DRD"
 author: 'Anisha Bhattarai'
 date: "2026-06-30"
 output: html_document
@@ -7,7 +7,8 @@ output: html_document
 
 <!-- 
 WIMD has published six times since 2005(2005, 2008, 2011, 2014, 2019, 2025) which tracks top 50 most deprived areas on those six releases. It explores dataset alone and ahead of joining to rural urban status -->
-```{r setup,message=FALSE,warning=FALSE}
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
 library(tidyverse)
 library(janitor)
 library(readODS)
@@ -15,7 +16,7 @@ library(here)
 
 ```
 
-## Step 1- Loading and cleaning DRD  data
+## Step 1- Loading and Cleaning DRD  data
 ```{r load_drd_data}
 drd_WIMD <- read_ods(
   here("data", "raw", "welsh-index-of-multiple-deprivation-wimd-2025-data-underlying-deep-dooted-deprivation-analysis.ods"),

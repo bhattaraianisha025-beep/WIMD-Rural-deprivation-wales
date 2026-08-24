@@ -9,7 +9,7 @@ output: html_document
 First Script: Result of this project rely on four official welsh Government datasets(WIMD ranks, WIMD scores, Deep-Rooted Deprivation, ONS Rural-Urban Classification)refer to 1917 LSOAs, with no missing and duplication-->
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
 ```
 
 ## Step 1- Load libraries

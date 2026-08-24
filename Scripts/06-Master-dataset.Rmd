@@ -6,7 +6,8 @@ output: html_document
 ---
 <!-- This script is the key for whole project, joins four dataset into one dataset(master_dataset.csv) -->
 
-```{r setup, message=FALSE, warning=FALSE}
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
 library(tidyverse)
 library(janitor)
 library(readODS)

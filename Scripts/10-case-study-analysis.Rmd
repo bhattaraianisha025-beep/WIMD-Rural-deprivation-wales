@@ -7,7 +7,8 @@ output: html_document
 
 <!-- This script shows pattern in four local authorities(3 rural and 1 comparator) and Ceredigion-->
 
-```{r setup, message=FALSE, warning=FALSE}
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
 library(tidyverse)
 library(janitor)
 

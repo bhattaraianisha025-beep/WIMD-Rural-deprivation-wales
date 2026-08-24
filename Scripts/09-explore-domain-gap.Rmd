@@ -5,7 +5,8 @@ date: "2026-07-07"
 output: html_document
 ---
 <!-- This Script establish 19%/81% weight gap it works on every domain individually where rural score worse and income masking evidence-->
-```{r setup, message=FALSE, warning=FALSE}
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
 library(tidyverse)
 library(janitor)
 

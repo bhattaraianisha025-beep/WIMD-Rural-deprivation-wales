@@ -38,11 +38,10 @@ All data used in this project is publicly available under the Open Government Li
 
 | Dataset | Provider | Licence | Link |
 |---|---|---|---|
-| WIMD 2025 — index and domain ranks | Welsh Government | OGL v3.0 | [StatsWales](https://stats.gov.wales/en-GB/9706edd9-73ad-4902-bb12-7ccd7038626e) |
-| WIMD 2025 — index and domain scores | Welsh Government | OGL v3.0 | [StatsWales](https://stats.gov.wales/en-GB/9706edd9-73ad-4902-bb12-7ccd7038626e) |
-| WIMD 2025 — deep-rooted deprivation data | Welsh Government | OGL v3.0 | [StatsWales](https://stats.gov.wales/en-GB/cbecfd4a-2984-4c2e-b9e2-4010fd2348ef) |
-| Rural Urban Classification 2021, LSOAs in England & Wales | ONS | OGL v3.0 | [ONS Open Geography Portal](https://geoportal.statistics.gov.uk/datasets/ons::rural-urban-classification-2021-of-lsoas-in-ew/explore
-
+| WIMD 2025 — index and domain ranks | Welsh Government | OGL v3.0 | [GOV.WALES](https://www.gov.wales/welsh-index-multiple-deprivation-2025)|
+| WIMD 2025 — index and domain scores | Welsh Government | OGL v3.0 | [GOV.WALES](https://www.gov.wales/welsh-index-multiple-deprivation-2025)|
+| WIMD 2025 — deep-rooted deprivation data | Welsh Government | OGL v3.0 | [GOV.WALES](https://www.gov.wales/welsh-index-multiple-deprivation-2025)|
+| Rural Urban Classification 2021, LSOAs in England & Wales | ONS | OGL v3.0 | [ONS Open Geography Portal](https://geoportal.statistics.gov.uk/datasets/ons::rural-urban-classification-2021-of-lsoas-in-ew/explore)|
 ## Methodology
 
 The analysis uses Welsh Government guidance on interpretation of WIMD

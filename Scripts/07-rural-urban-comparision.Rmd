@@ -6,7 +6,8 @@ output: html_document
 ---
 
 <!--First analysis stage: rural vs urban wales worse score, statistical difference-->
-```{r setup, message=FALSE, warning=FALSE}
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
 library(tidyverse)
 library(janitor)
 ```
