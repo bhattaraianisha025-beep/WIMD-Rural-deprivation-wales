@@ -4,7 +4,7 @@
 ## Project Background
 
 Wales Index of Multiple Deprivation(WIMD) is a official statistics used by Welsh Government for policy and funding.It ranks all 1917 small areas(LSOAs) in wales from 1 (most deprived) to 1917 (least deprived)
-This project examine whether WIMD 2025 combines its eight deprivation domain adequately capture deprivation in rural Welsh communities, and examines the implications for rural-proofing policy in Wales. It is produced as part of a 10-week professional placement with Rural Health Compass (RHC).This analysis doesnot question accuracy of WIMD’s underlying domain data. WIMD DOMAIN rank are official goverment statistics
+This project examine whether WIMD 2025 combines its eight deprivation domain adequately capture deprivation in rural Welsh communities, and examines the implications for rural-proofing policy in Wales. It is produced as part of a 10-week professional placement with Rural Health Compass (RHC).This analysis doesnot question accuracy of WIMD’s underlying domain data.
 
 ## Project Details
 
