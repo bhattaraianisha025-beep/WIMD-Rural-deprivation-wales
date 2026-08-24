@@ -34,7 +34,7 @@ ranks_WIMD <- read_ods(
 ```
 
 ## Step 2-Load WIMD 2025 Score dataset
-```{rload_scores}
+```{r load_scores}
 scores_WIMD <- read_ods(
   "../data/raw/wimd-2025-index-and-domain-scores-by-small-area.ods",
   sheet = "Data",
@@ -78,7 +78,7 @@ drd_WIMD <- read_ods(
 ```
 
 ## Step 4- Load ONS Rural urban Classification 2021
-```{rload_ruc}
+```{r load_ruc}
 ruc_file <- list.files("../data/raw", pattern = "Rural_Urban", full.names = TRUE)
 
 ruc_WIMD <- read_csv(ruc_file[1]) %>%

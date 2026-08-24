@@ -11,20 +11,22 @@ WIMD has published six times since 2005(2005, 2008, 2011, 2014, 2019, 2025) whic
 library(tidyverse)
 library(janitor)
 library(readODS)
+library(here)
 
 ```
 
 ## Step 1- Loading and cleaning DRD  data
 ```{r load_drd_data}
-drd_WIMD <- suppressWarnings(read_ods(
-  "../data/raw/welsh-index-of-multiple-deprivation-wimd-2025-data-underlying-deep-dooted-deprivation-analysis.ods",
+drd_WIMD <- read_ods(
+  here("data", "raw", "welsh-index-of-multiple-deprivation-wimd-2025-data-underlying-deep-dooted-deprivation-analysis.ods"),
   sheet = "Data",
-  skip = 4))%>% 
+  skip = 4
+) %>%
   clean_names() %>%
-  filter(!is.na(.[[3]])) # col 3 = lsoa_code
+  filter(!is.na(.[[3]]))
+
 cat("Rows:", nrow(drd_WIMD), "| Cols:", ncol(drd_WIMD), "\n")
-# Historic rank cols use  "[x]" for suppressed value(boundary change in WIMD publications )
-# str_remove_all("^0-9]") strip non numeric:"[x]"-> NA
+
 rank_cols <- names(drd_WIMD)[5:10]
 drd <- drd_WIMD %>%
   mutate(across(all_of(rank_cols),
@@ -41,7 +43,7 @@ drd %>% count(category_of_deep_rooted_deprivation, sort = TRUE)
 ## Step 3- Check suppressed values as boundary change not missing data
 ```{r suppressed}
 cat("Suppressed/missing values per rank column:\n")
-colSums(is.na(drd[ranks_cols]))
+colSums(is.na(drd[rank_cols]))
 ```
 
 ## Step 4- Persistently deprived areas in local authorities

@@ -13,47 +13,45 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ## Step 1- Load libraries
-```{r_load_packages}
+```{r load_packages}
 library(tidyverse)
 library(readODS)
 library(janitor)
+library(here)
 ```
 
 ## Step 2- confirmation of directory and raw files
-```{r_check_environment}
+```{r check_environment}
 cat("Libraries loaded\n")
-cat("Working directory:", getwd(), "\n")
+cat("Project root (here):", here::here(), "\n")
 cat("Files in data/raw:\n")
-print(list.files("data/raw"))
+print(list.files(here("data", "raw")))
 ```
 
 ## Step 3-Load four raw datasets
 ```{r}
-ranks_raw <- read_ods(
-  "../data/raw/wimd-2025-index-and-domain-ranks-by-small-area.ods",
+ranks_raw <- read_ods(here("data", "raw","wimd-2025-index-and-domain-ranks-by-small-area.ods"),
   sheet = "WIMD_2025_ranks",
   skip = 2
 )
 ```
 
 ```{r}
-scores_WIMD <- read_ods(
-  "../data/raw/wimd-2025-index-and-domain-scores-by-small-area.ods",
+scores_WIMD <- read_ods(here("data", "raw","wimd-2025-index-and-domain-scores-by-small-area.ods"),
   sheet = "Data",
   skip = 3
 )
 ```
 
 ```{r}
-drd_WIMD <- read_ods(
-  "../data/raw/welsh-index-of-multiple-deprivation-wimd-2025-data-underlying-deep-dooted-deprivation-analysis.ods",
+drd_WIMD <- read_ods( here("data", "raw","welsh-index-of-multiple-deprivation-wimd-2025-data-underlying-deep-dooted-deprivation-analysis.ods"),
   sheet = "Data",
   skip = 4
 )
 ```
 
 ```{r}
-ruc_files <- list.files("../data/raw", pattern = "Rural", full.names = TRUE)
+ruc_files <- list.files(here("data", "raw"), pattern = "Rural", full.names = TRUE)
 ruc_files
 ```
 
@@ -83,7 +81,7 @@ head(groups_data_WIMD, 3)
 ```
 
 ## Step 5-Five data sources agree on 1917 LSOAs
-```{r_check_count}
+```{r check_count}
 ranks_lsoas <- unique(ranks_raw[[1]])
 scores_lsoas <- unique(scores_WIMD[[1]])
 drd_lsoas <- unique(drd_WIMD[[3]][str_starts(drd_WIMD[[3]], "W01")])
