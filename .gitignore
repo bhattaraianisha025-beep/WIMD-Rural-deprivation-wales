@@ -1,9 +1,12 @@
 # R environment
 .Rhistory
-.Rdata
 .RData
 .Rproj.user/
-*.Rproj
+
+#Knit byproducts
+*.html
+*_files/
+*_cache/
 
 # Raw data (download from sources listed in README)
 data/raw/
