@@ -1,16 +1,17 @@
 ---
-title: "Rural urban comparision"
-author: 'Student ID: 52533934'
+title: "Rural vs urban,domain comparision"
+author: 'Anisha Bhattarai'
 date: "2026-07-02"
 output: html_document
 ---
 
+<!--First analysis stage: rural vs urban wales worse score, statistical difference-->
 ```{r setup, message=FALSE, warning=FALSE}
 library(tidyverse)
 library(janitor)
 ```
 
-
+## Step 1- Load master dataset, rural urban split
 ```{r}
 master<- read_csv("../data/processed/master_dataset.csv") %>%
   mutate(rural_urban = factor(rural_urban, levels = c("Rural","Urban")))
@@ -20,6 +21,7 @@ cat("Rural:", nrow(rural), "| Urban:", nrow(urban), "\n")
 
 ```
 
+## Step 2- Median rank per domain, rural vs urban
 ```{r domain_medians}
 # median rank per domain, low rank= more deprived
 domain_cols <- c("wimd_2025_rank", "income_rank", "employment_rank",
@@ -33,9 +35,9 @@ master %>%
 
 ```
 
-
+## Step 3- Mann- Whitney U test and effect size of every domain
 ```{r mann_whitney}
-#Mann-whitney  and effect size for each domain
+#Mann-whitney appropriate for rank data  and effect size for each domain
 
 map_dfr(domain_cols, function(col) {
   test <- wilcox.test(rural[[col]], urban[[col]],
@@ -53,8 +55,9 @@ map_dfr(domain_cols, function(col) {
 
 ```
 
+## Step 4- The access rank gap:hidden deprivation  overall rank 
 ```{r access_rank_gap}
-# access_rank_gap= access_rank-overall rank
+# access_rank_gap negative means LSOA is more deprived on access than overall rank 
 master %>%
   group_by(rural_urban) %>%
   summarise(
@@ -66,8 +69,9 @@ master %>%
 
 ```
 
+## Step 5- Weight gap- which group is worse
 ```{r weight_mismatch}
-#
+#For each domain whether rural urban is worse
 weights <- tibble(
   domain      = c("income_rank", "employment_rank", "health_rank",
                   "education_rank", "access_rank", "housing_rank",
@@ -83,10 +87,9 @@ map_dfr(domain_cols[domain_cols != "wimd_2025_rank"], function(col) {
   group_by(rural_worse) %>%
   summarise(combined_weight = sum(wimd_weight), .groups="drop")
 
-
-
 ```
 
+## Step 6- Deprivation on Access accross 6 RUV categories
 ```{r ruc_sensitivity}
 # access deprivation by all 6 RUC categories
 master %>%
@@ -100,23 +103,22 @@ master %>%
   arrange(median_access)
 ```
 
-
+## Step 7- Remoteness predict how access deprivation is hidden
 ```{r spearman_remoteness}
-# remoteness predict size of access rank gap?
+# rural areas; coded 4 RUC subcategoriesbeing more remote predict bigger gap between access and overall rank
 master %>%
-  mutate(ruc_ordinal = case_when(
-    str_detect(ruc_name, "Smaller rural.*Further") ~ 1,
-    str_detect(ruc_name, "Smaller rural.*Nearer")  ~ 2,
-    str_detect(ruc_name, "Larger rural.*Further")  ~ 3,
-    str_detect(ruc_name, "Larger rural.*Nearer")   ~ 4,
-    str_detect(ruc_name, "Urban.*Further")          ~ 5,
-    str_detect(ruc_name, "Urban.*Nearer")           ~ 6
+  mutate(remoteness = case_when(
+    str_detect(ruc_name, "Larger rural.*Further")  ~ 4,
+    str_detect(ruc_name, "Smaller rural.*Further")  ~ 3,
+    str_detect(ruc_name, "Larger rural.*Nearer")    ~ 2,
+    str_detect(ruc_name, "Smaller rural.*Nearer")   ~ 1
   )) %>%
   summarise(
-    spearman_r = round(cor(ruc_ordinal, access_rank_gap,
-                           method="spearman", use="complete.obs"), 3),
-    n = sum(!is.na(ruc_ordinal) & !is.na(access_rank_gap))
+    spearman_r = round(cor(remoteness, access_rank_gap,
+                           method = "spearman", use = "complete.obs"), 3),
+    n = sum(!is.na(remoteness) & !is.na(access_rank_gap))
   )
+
 
 
 ```

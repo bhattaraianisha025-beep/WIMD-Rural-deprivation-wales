@@ -1,21 +1,23 @@
 ---
 title: "Check and visualization of data"
-author: 'Student ID: 52533934'
+author: 'Anisha Bhattarai|Msc Health Data Science| Rural Health Compass'
 date: "2026-07-25"
 output: html_document
 ---
+<!-- This is the final script in pipeline,It recomputes and check all results from raw data of masterdata and creates charts for Presentation and Report. Every chart has 2 chunks check and chart-->
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo=TRUE, message=FALSE, warning=FALSE,
                       fig.width=9, fig.height=5, dpi=150)
 library(tidyverse)
+library(here)
+here::here()
 ```
 
-
+## Step 1- Load data
 ```{r}
-setwd("C:/Users/Bruger/Desktop/WIMD-Rural-deprivation-wales")
 
-master <- read_csv("data/processed/master_dataset.csv", show_col_types=FALSE) %>%
+master <- read_csv(here("data", "processed", "master_dataset.csv"), show_col_types=FALSE) %>%
   mutate(rural_urban = factor(rural_urban, levels=c("Rural","Urban")))
 
 rural <- filter(master, rural_urban == "Rural")
@@ -32,7 +34,7 @@ tibble(check = c("Rows","Rural","Urban","Worst 20% ≤","Worst 10% ≤"),
        value = c(N, nrow(rural), nrow(urban), T20, T10))
 
 ```
-
+## Step 2- Helper function
 ```{r}
 # One helper does everything. Takes a data frame and a column NAME (string).
 pct_worst20 <- function(df, col) round(100 * mean(df[[col]] <= T20, na.rm=TRUE), 1)
@@ -54,9 +56,7 @@ DOM <- tribble(
 ```
 
 
-
-
-
+## Step 3- Color and theme
 ```{r theme}
 RED  <- "#C0392B"; BLUE <- "#2471A3"; ORG <- "#E67E22"
 PUR  <- "#7D3C98"; GRY  <- "#333333"; BG  <- "#FFFFFF"
@@ -81,29 +81,28 @@ TH <- theme_minimal(base_size=11) +
         legend.text     = element_text(size=9.5, colour="#52514E"),
         legend.title    = element_blank())
 
-dir.create("outputs", showWarnings=FALSE)
-sv  <- function(p, f, h=5) ggsave(file.path("outputs",f), p, width=9, height=h, dpi=150, bg=BG)
+dir.create("../outputs/charts",  showWarnings=FALSE)
+sv  <- function(p, f, h=5) ggsave(file.path("../outputs/charts",f), p, width=9, height=h, dpi=150, bg=BG)
 PCT <- function(x) paste0(x,"%")
 SRC <- "Source: WIMD 2025 (Welsh Government); RUC 2021 (ONS). n=1,917 Welsh LSOAs."
 
 ```
 
-
-```{r}
-need    <- c("master","rural","urban","DOM","pct_worst20","NEVER","T20","N")
-missing <- need[!sapply(need, exists)]
-if (length(missing) > 0) {
-  stop("Missing: ", paste(missing, collapse=", "),
-       ". Run Session > Restart R, then Run > Run All from the top of the script.")
-}
-cat("All required objects present \u2014 safe to run any chunk below.\n")
+## Step 4- Folder create and save 
+```{r gaurd}
+dir.create(here("outputs", "charts"), recursive = TRUE, showWarnings = FALSE)
+sv  <- function(p, f, h=5) ggsave(here("outputs", "charts", f), p, width = 9, height = h, dpi = 150, bg = BG)
+PCT <- function(x) paste0(x,"%")
+SRC <- "Source: WIMD 2025 (Welsh Government); RUC 2021 (ONS). n=1,917 Welsh LSOAs."
+cat("Ready:", nrow(master), "rows\n")
+cat("Charts will save to:", here("outputs", "charts"), "\n")
 
 ```
 
-
-
-```{r}
-# For each domain, is the rural %worst20 higher or lower than the urban %worst20?
+## Weight Structure
+## Check
+```{r C2 Check}
+# For each domain,rural %worst20 higher or lower than the urban %worst20
 c2_side <- DOM %>%
   mutate(rural_pct = map_dbl(col, ~ pct_worst20(rural, .x)),
          urban_pct = map_dbl(col, ~ pct_worst20(urban, .x)),
@@ -118,8 +117,8 @@ c2
 
 ```
 
-
-```{r}
+## Chart
+```{r C2 Chart}
 p2 <- c2 %>%
   mutate(side = factor(side, levels = c("Rural deprivation higher",
                                         "Urban deprivation higher"))) %>%
@@ -150,7 +149,8 @@ p2; sv(p2, "c2_weight_structure.png", h = 3.8)
 
 ```
 
-```{r}
+```{r C2 Sidebar_list}
+# It shows list of domains and percentage for each on side
 c2_side %>%
   arrange(desc(weight)) %>%
   mutate(line = paste0(label, " — ", weight, "%  (", side, ")")) %>%
@@ -159,8 +159,9 @@ c2_side %>%
 
 ```
 
-
-```{r}
+## C1- Eight domains
+## Check
+```{r C1 }
 c1 <- DOM %>%
   bind_rows(tibble(col = "wimd_2025_rank", label = "Overall WIMD", weight = NA)) %>%
   mutate(rural_pct = map_dbl(col, ~ pct_worst20(rural, .x)),
@@ -171,8 +172,8 @@ c1 %>% select(label, weight, rural_pct, urban_pct, gap) %>% arrange(desc(gap))
 
 ```
 
-
-```{r}
+## Chart
+```{r C1_Chart}
 p1 <- c1 %>%
   mutate(axis = fct_reorder(axis, gap)) %>%
   ggplot(aes(x = gap, y = axis, fill = gap > 0)) +
@@ -192,14 +193,15 @@ p1; sv(p1, "c1_all_domain_gaps.png")
 
 ```
 
-```{r}
-# Rural example: in worst 10% on access, best possible income
+#C2b- Example of two real communities
+## Check
+```{r C2b_Check}
+# Rural: in worst 10% on access, best income
 rural_case <- rural %>% filter(access_rank <= T10) %>% slice_max(income_rank, n = 1)
-# Urban example: the most income-deprived urban LSOA
+# Urban: the most income-deprived urban LSOA
 urban_case <- urban %>% slice_min(income_rank, n = 1)
 
-# ALL EIGHT domains + overall, per host feedback: "consider having all the
-# domains side by side here, similar to what you did in slide 8"
+# ALL EIGHT domains + overall " all domains side by side"
 ALLDOM <- bind_rows(DOM, tibble(col = "wimd_2025_rank", label = "Overall", weight = NA))
 
 c2b <- bind_rows(rural_case, urban_case) %>%
@@ -209,8 +211,8 @@ c2b
 
 ```
 
-```{r}
-# One bar per domain, one colour per LSOA — same visual grammar as C8's
+## Chart
+```{r C2b_chart}
 # LA comparison, applied at the individual-community level.
 rural_name <- c2b$lsoa[1]; urban_name <- c2b$lsoa[2]
 
@@ -245,13 +247,11 @@ p2b; sv(p2b, "c2b_two_communities.png", h = 5.5)
 
 ```
 
-
+# C4- Top 50 per domain
+## Check
 
 ```{r}
-# For each rank column: find the 50 smallest ranks, count how many are rural.
-# Base-R indexing (order + [[ ) avoids tidy-eval lazy-evaluation problems
-# that occur when a column name is passed as a variable into dplyr verbs
-# nested inside map_int().
+# For each rank column: find the 50 ranks, count how many are rural.
 top50_rural_count <- function(col_name) {
   ranked_order <- order(master[[col_name]])   # row positions, smallest rank first
   top50_rows   <- ranked_order[1:50]
@@ -267,8 +267,8 @@ c4 %>% select(label, weight, rural, urban)
 
 ```
 
-
-```{r}
+## Chart 
+```{r C4_chart}
 p4 <- c4 %>%
   mutate(axis = fct_reorder(axis, -rural)) %>%
   select(axis, rural, urban) %>%
@@ -300,10 +300,12 @@ p4; sv(p4, "c4_top50_per_domain.png")
 
 ```
 
-```{r}
+# C8- Four local authorities
+## Check
+```{r C8_check}
 LAS <- c("Powys", "Ceredigion", "Pembrokeshire", "Swansea")
 
-# Compute each %worst20 directly — no cur_data_all(), no fragile helpers
+# Each %worst20 directly 
 c8 <- master %>%
   filter(la_name %in% LAS) %>%
   group_by(la_name) %>%
@@ -320,7 +322,8 @@ c8
 
 ```
 
-```{r}
+## Chart
+```{r C8_chart}
 p8 <- c8 %>%
   select(-n) %>%
   pivot_longer(-la_name, names_to = "measure", values_to = "pct") %>%
@@ -356,8 +359,10 @@ p8; sv(p8, "c8_la_five_measures.png", h = 5.5)
 
 ```
 
-```{r}
-
+# C7 -Mechanism
+## Check
+```{r C7_check}
+# 
 c7_groups <- rural %>%
   mutate(income_dep = income_rank <= T20,
          access_dep = access_rank <= T20,
@@ -378,22 +383,21 @@ c7_groups <- rural %>%
             .groups     = "drop")
 c7_groups
 
-# Presentation version — drop "Neither" (not part of this argument)
+# drop "Neither" 
 c7 <- c7_groups %>%
   filter(grp != "Neither") %>%
   mutate(grp = factor(grp, levels = c("Income deprived only",
                                       "Income and access deprived",
                                       "Access deprived only")))
 
-# Fails immediately, at the point of creation — not three chunks
-# later inside a ggplot call
 stopifnot(!any(is.na(c7$col)))
 c7 %>% select(grp, n, visible_pct, col)
 
 ```
 
-
-```{r}
+## Chart
+```{r C7_Chart}
+# 
 p7 <- c7 %>%
   mutate(lab = paste0(grp, "\n(", n, " areas)"),
          lab = fct_reorder(lab, -visible_pct)) %>%
@@ -421,8 +425,10 @@ p7; sv(p7, "c7_mechanism.png", h = 5.3)
 
 ```
 
+# C5-20 years tracking
 
-```{r}
+## Check
+```{r C5_check}
 c5_full <- master %>%
   count(rural_urban, drd_category) %>%
   group_by(rural_urban) %>%
@@ -441,8 +447,8 @@ c5 <- master %>%
 c5
 ```
 
-
-```{r}
+## Chart
+```{r C5_chart}
 never_rural <- c5$n[c5$rural_urban == "Rural" & c5$status == "Never in the 50 most deprived"]
 ever_rural  <- c5$n[c5$rural_urban == "Rural" & c5$status == "Has been in the 50 most deprived"]
 ever_urban  <- c5$n[c5$rural_urban == "Urban" & c5$status == "Has been in the 50 most deprived"]
@@ -477,21 +483,11 @@ p5; sv(p5, "c5_twenty_year_tracking.png")
 
 ```
 
-```{r}
-p5_slide <- p5 + labs(title = NULL, subtitle = NULL)
-p5_slide; sv(p5_slide, "c5_twenty_year_tracking_SLIDE.png", h = 5)
 
-# Paste this as the (large, resizable) sidebar heading next to the image:
-cat("Twenty years of tracking \u2014 rural Wales is almost absent\n\n",
-    "Only ", ever_rural, " of ", ever_rural + never_rural,
-    " rural areas have ever appeared in the 50 most deprived since 2005.\n",
-    ever_urban, " urban areas have.\n", sep = "")
-
-```
-
-
-```{r}
-# Sensitivity check: threshold precision matters here
+# C11- Invisible communities to WIMD
+## Check
+```{r C11_check}
+# check sensitivity:threshold precision
 tibble(threshold = c(T10, 192),
        n         = c(nrow(filter(rural, access_rank <= T10, wimd_2025_rank > T20)),
                      nrow(filter(rural, access_rank <= 192,  wimd_2025_rank > T20))))
@@ -506,8 +502,8 @@ tibble(check = "invisible areas that appear in worst 20% overall",
 
 ```
 
-
-```{r}
+## Chart
+```{r C11_Chart}
 p11 <- c11 %>%
   mutate(la_name = fct_reorder(la_name, n)) %>%
   ggplot(aes(x = n, y = la_name)) +
@@ -529,6 +525,8 @@ p11; sv(p11, "c11_invisible_communities.png", h = 6)
 
 ```
 
+# Report Charts
+## C3- Access rank gap
 ```{r}
 c3 <- master %>%
   mutate(gap = access_rank - wimd_2025_rank) %>%
@@ -567,7 +565,8 @@ p3; sv(p3, "c3_access_rank_gap.png")
 
 ```
 
-```{r}
+## C6- Profile of tracked and never
+```{r C6_Check}
 c6 <- bind_rows(
   rural %>% filter(drd_category == NEVER) %>%
     summarise(group  = "Rural, never tracked",
@@ -583,7 +582,7 @@ c6
 
 ```
 
-```{r}
+```{r C6_chart}
 p6 <- c6 %>%
   mutate(lab = paste0(group, "\n(", n, " areas)")) %>%
   pivot_longer(c(Income, Access), names_to = "domain", values_to = "rank") %>%
@@ -606,7 +605,8 @@ p6; sv(p6, "c6_drd_profiles.png")
 
 ```
 
-```{r}
+## C9- Within Ceredigion
+```{r C9_check}
 cer <- filter(master, la_name == "Ceredigion")
 
 ab_pts <- cer %>% filter(str_detect(lsoa_name, "Aberystwyth")) %>%
@@ -615,11 +615,11 @@ ru_pts <- cer %>% filter(rural_urban == "Rural") %>%
   transmute(group = "Rural Ceredigion", access_rank)
 c9 <- bind_rows(ab_pts, ru_pts)
 
-# What the old median hid: individual ranks in each group
+# Old median hid:individual ranks in each group
 sort(ab_pts$access_rank)
 sort(ru_pts$access_rank)
 
-# Simple counts instead of an average — easy to state, nothing to explain
+# counts instead of an average — easy to state
 c9 %>%
   group_by(group) %>%
   summarise(n = n(), in_worst20 = sum(access_rank <= T20), .groups = "drop")
@@ -628,13 +628,14 @@ c9 %>%
 ```
 
 
-```{r}
+```{r C9_chart}
+# Dot plot: Each LSOAs shown individually of aberystwith and rural ceredigion
 ab_n   <- sum(c9$group == "Aberystwyth (town)")
 ru_n   <- sum(c9$group == "Rural Ceredigion")
 ab_bad <- sum(c9$group == "Aberystwyth (town)" & c9$access_rank <= T20)
 ru_bad <- sum(c9$group == "Rural Ceredigion"   & c9$access_rank <= T20)
 
-set.seed(1)  # fixed seed so the jitter looks the same every time this runs
+set.seed(1)  # fixed seed it looks same every time this runs
 
 p9 <- c9 %>%
   mutate(group = factor(group, levels = c("Aberystwyth (town)", "Rural Ceredigion"))) %>%
@@ -661,61 +662,51 @@ p9 <- c9 %>%
   )
 p9; sv(p9, "c9_within_ceredigion.png")
 
-
 ```
+
+## C10- Health and access domain
 
 
 ```{r}
+q_edges  <- floor(N * (1:4) / 5)
+q_labels <- c("Worst 20%\n(most deprived)", "2nd worst 20%", "Middle 20%",
+              "2nd best 20%", "Best 20%\n(least deprived)")
+
 c10 <- master %>%
-  mutate(access_group = if_else(access_rank <= T20,
-                                "Poor access to services",
-                                "Normal access to services"),
-         access_group = factor(access_group,
-                        levels = c("Poor access to services",
-                                  "Normal access to services"))) %>%
-  group_by(rural_urban, access_group) %>%
-  summarise(n           = n(),
-            healthy_n   = sum(health_rank > B20),
-            pct_healthy = round(100 * healthy_n / n, 1),
-            .groups     = "drop")
+  mutate(access_band = cut(access_rank, breaks = c(0, q_edges, N), labels = q_labels)) %>%
+  group_by(access_band, rural_urban) %>%
+  summarise(n = n(), pct_healthy = round(100 * mean(health_rank > B20), 1),
+            .groups = "drop")
 c10
+
+tibble(check = "Spearman correlation, health rank vs access rank (rural only)",
+       value = round(cor(rural$health_rank, rural$access_rank, method = "spearman"), 3))
+
 ```
 
+
+
 ```{r}
-
-
 p10 <- c10 %>%
-  ggplot(aes(x = access_group, y = pct_healthy, fill = rural_urban)) +
-  geom_col(position = position_dodge(width = 0.6), width = 0.55,
-           colour = BG, linewidth = 0.4) +
-  geom_text(aes(label = paste0(healthy_n, " of ", n)),
-            position = position_dodge(width = 0.6),
-            vjust = -1.6, size = 5.2, fontface = "bold", colour = "#111111") +
-  geom_text(aes(label = paste0("(", pct_healthy, "%)")),
-            position = position_dodge(width = 0.6),
-            vjust = -0.35, size = 3.6, colour = "#555555") +
-  scale_fill_manual(values = c(Rural = RED, Urban = BLUE), name = NULL) +
-  scale_y_continuous(limits = c(0, 55), labels = PCT, breaks = seq(0, 50, 25)) +
-  labs(title    = "Poor access makes a rural area look healthier. In urban Wales it makes no difference.",
-       subtitle = "Number of areas ranked among the healthiest in Wales, out of each group",
-       x = NULL, y = "% ranked among the healthiest in Wales",
-       caption = paste0(
-         "Poor access = worst 20% of Wales for access to services (rank \u2264 383). ",
-         "Healthiest = best 20% of Wales for health (rank > 1,534).\n",
-         SRC, "  Rural gap = +28.1pp. Urban gap = -0.6pp (flat).")) +
-  TH + theme(
-    axis.text.y  = element_blank(),                 # unchanged — y has no real labels
-    plot.title   = element_text(size = 15),          # was 13
-    plot.subtitle= element_text(size = 12.5),        # was 9.5
-    axis.text.x  = element_text(size = 11.5),        # was 9.5
-    axis.title.x = element_text(size = 12)           # was 9.5
-  )
+  ggplot(aes(x = access_band, y = pct_healthy, fill = rural_urban)) +
+  geom_col(position = "dodge", width = 0.62, colour = BG, linewidth = 0.4) +
+  geom_text(aes(label = PCT(pct_healthy)), position = position_dodge(width = 0.62),
+            vjust = -0.4, size = 4.2, fontface = "bold", colour = "#111111") +
+  scale_fill_manual(values = c(Rural = RED, Urban = BLUE)) +
+  scale_y_continuous(limits = c(0, 52), labels = PCT, breaks = seq(0, 50, 10)) +
+  labs(title    = "The worse a rural area's access, the healthier it looks on WIMD",
+       subtitle = "% of areas in the healthiest 20% of Wales, by how deprived they are on access to services",
+       x = "How deprived the area is on access to services",
+       y = "% of areas ALSO in the healthiest 20% of Wales",
+       caption = paste(SRC, "Health correlation with access rank (rural) = -0.382.")) +
+  TH
 p10; sv(p10, "c10_health_and_access.png")
 
+
 ```
 
-
-```{r}
+## C12- Dual deprivation both in access and housing
+```{r C12_check}
 dual <- rural %>% filter(access_rank <= T20, housing_rank <= T20)
 tibble(check = c("dual-deprived rural areas", "of which visible in worst 20% overall"),
        value = c(nrow(dual), sum(dual$wimd_2025_rank <= T20)))
@@ -729,7 +720,7 @@ c12
 
 ```
 
-```{r}
+```{r C12_chart}
 p12 <- c12 %>%
   mutate(la_name = fct_reorder(la_name, n)) %>%
   ggplot(aes(x = n, y = la_name)) +

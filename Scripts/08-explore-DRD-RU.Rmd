@@ -1,16 +1,17 @@
 ---
 title: "DRD-RuralUrban"
-author: 'Student ID: 52533934'
+author: 'Anisha Bhattarai'
 date: "2026-07-04"
 output: html_document
 ---
-
+<!-- This script of DRD data track each LSOA appeared in top 50 most deprived areas across six WIMD publication since 2005, invisible communities chart become central to policy recommendation-->
 ```{r setup,message=FALSE, warning=FALSE}
 library(tidyverse)
 library(janitor)
 ```
 
-```{r}
+## Step 1- Load master dataset
+```{r load_data}
 master <- read_csv("../data/processed/master_dataset.csv") %>%
   mutate(
     rural_urban = factor(rural_urban, levels = c("Rural", "Urban")),
@@ -24,14 +25,22 @@ master <- read_csv("../data/processed/master_dataset.csv") %>%
       ),
       ordered = TRUE)
   )
+# threshold from N stay correct dataset ever size change
+N   <- nrow(master)
+T10 <- floor(N * 0.10)   # = 191
+T20 <- floor(N * 0.20)   # = 383
+cat("N =", N, "| worst 10% <= ", T10, "| worst 20% <=", T20, "\n")
+
 
 ```
 
+## Step 2- rural urban in each DRD categories
 ```{r drd_crosstab}
 # Number of rural, urban LSOAs in each DRD category
 table(master$drd_category, master$rural_urban)
 ```
 
+## Step 3- % share within rural and urban
 ```{r drd_pct}
 # row percentage-share of each category in rural and urban
 prop.table(
@@ -41,6 +50,8 @@ prop.table(
   round(3) * 100
 
 ```
+
+## Step 4- rural in deep rooted  
 ```{r rural_deep_rooted}
 
 master %>%
@@ -52,11 +63,12 @@ master %>%
 
 ```
 
+## Step 5- invisible communities
 ```{r invisible_lsoas}
-# never enter DRD tracking
+# Worst 10% for access in wales and never enter DRD tracking 
 master %>%
   filter(rural_urban == "Rural",
-         access_rank <= 192,    # worst 10% on access
+         access_rank <= T10,    # worst 10% on access
          wimd_2025_rank > 50) %>%  # but not overall top 50
   summarise(
     count               = n(),
@@ -69,30 +81,22 @@ master %>%
 ```
 
 
-```{r invisible_by_la}
-# LAs have most invisible rural LSOAs
-master %>%
-  filter(rural_urban == "Rural", access_rank <= 192, wimd_2025_rank > 50) %>%
-  count(la_name, sort=TRUE)
-
-
-```
-
+## Stage 6- Visibility mechanism 
 ```{r mechanism_proof}
 # structural proof- access deprivation alone vs income deprivation 
 master %>%
   filter(rural_urban == "Rural") %>%
   mutate(dep_type = case_when(
-    access_rank <= 383 & income_rank <= 383 ~ "Both access AND income",
-    access_rank <= 383 & income_rank >  383 ~ "Access deprived only",
-    access_rank >  383 & income_rank <= 383 ~ "Income deprived only",
+    access_rank <= T20 & income_rank <= T20 ~ "Both access AND income",
+    access_rank <= T20 & income_rank >  T20 ~ "Access deprived only",
+    access_rank >  T20 & income_rank <= T20 ~ "Income deprived only",
     TRUE                                    ~ "Neither"
   )) %>%
   group_by(dep_type) %>%
   summarise(
     n                   = n(),
     median_overall_rank = median(wimd_2025_rank, na.rm=TRUE),
-    pct_worst20_overall = round(100 * mean(wimd_2025_rank <= 383), 1),
+    pct_worst20_overall = round(100 * mean(wimd_2025_rank <= T20), 1),
     .groups = "drop"
   ) %>%
   arrange(median_overall_rank)
@@ -100,6 +104,7 @@ master %>%
 
 ```
 
+## Stage 7- Stability across 20 years
 ```{r drd_volatility}
 # rank stability across 20 years by DRD category
 # SD across 6 iterations
@@ -114,9 +119,9 @@ master %>%
 
 ```
 
-
+## Step 8- Persistent deprivation missing rural areas
 ```{r drd_domain_profile}
-# Domain profile by DRD category- 2025 ranks only
+# compare income and access rank "never tracked"rural against "deep rooted" urban areas
 master %>%
 group_by(drd_category, rural_urban) %>%
   summarise(
@@ -130,23 +135,17 @@ group_by(drd_category, rural_urban) %>%
 
 ```
 
-```{r}
+## Step 9- Top 50 LSOA name and rural vs urban  
+```{r top_50_deprived areas}
 top50 <- master %>% slice_min(wimd_2025_rank, n = 50)
-
-top50 %>%
-  count(rural_urban) %>%
-  mutate(pct = paste0(round(100 * n / 50, 0), "%"))
-```
-
-
-```{r}
 top50 %>%
   select(wimd_2025_rank, lsoa_name, la_name,
          rural_urban, income_rank, employment_rank, access_rank) %>%
   arrange(wimd_2025_rank)
 ```
-
-```{r}
+ 
+## Step 10- Domain wise top 50 median rank
+```{r domain_top50_domainrank}
 dom_cols <- c("income_rank","employment_rank","health_rank",
               "education_rank","access_rank","housing_rank")
 
@@ -160,7 +159,8 @@ list(
           .id = "group")
 ```
 
-```{r}
+## Step 11-Top 50 domain distribution of rural vs urban 
+```{r domain_distribute_top50}
 domain_cols   <- c("wimd_2025_rank","income_rank","employment_rank",
                    "health_rank","education_rank","access_rank",
                    "housing_rank","community_safety_rank","physical_env_rank")
@@ -178,26 +178,4 @@ map2_dfr(domain_cols, domain_labels, function(col, label) {
 
 
 
-```{r drd_visualization}
-master %>%
-  count(rural_urban, drd_category) %>%
-  group_by(rural_urban) %>%
-  mutate(pct = round(100 * n / sum(n), 1)) %>%
-  ungroup() %>%
-  ggplot(aes(x = rural_urban, y = pct, fill = drd_category)) +
-  geom_col(position = "stack", width = 0.55) +
-  geom_text(aes(label = ifelse(pct > 1.5, paste0(n, "\n(", pct, "%)"),"  ")),
-            position = position_stack(vjust=0.5),
-            size=3.2, colour="white", fontface="bold") +
-  scale_fill_manual(values = c("#74add1","#f46d43","#d73027","#4d0000")) +
-  labs(title = "Deep-Rooted Deprivation: Rural vs Urban LSOAs",
-       subtitle = "559 of 561 rural LSOAs have never appeared in the top 50 most deprived in 20 years",
-       x=NULL, y="% of LSOAs", fill="DRD Category",
-       caption = "Source: WIMD 2025 DRD (Welsh Government); RUC 2021 (ONS).") +
-  theme_minimal(base_size=11) +
-  theme(legend.position="bottom", plot.title=element_text(face="bold")) +
-  guides(fill = guide_legend(nrow=2))
-
-
-```
 

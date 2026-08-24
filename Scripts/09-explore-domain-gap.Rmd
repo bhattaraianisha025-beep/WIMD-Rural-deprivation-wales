@@ -1,29 +1,31 @@
 ---
-title: "Domain gap"
-author: 'Student ID: 52533934'
+title: "Domain weight gap assessment"
+author: 'Anisha Bhattarai'
 date: "2026-07-07"
 output: html_document
 ---
-
+<!-- This Script establish 19%/81% weight gap it works on every domain individually where rural score worse and income masking evidence-->
 ```{r setup, message=FALSE, warning=FALSE}
 library(tidyverse)
 library(janitor)
 
 ```
 
-
-```{r}
+## Step 1- Load dataset
+```{r load_data}
 master<- read_csv("../data/processed/master_dataset.csv") %>%
 mutate(rural_urban = factor(rural_urban, levels = c("Rural", "Urban")))
 
 rural <- master %>% filter(rural_urban == "Rural")
 urban <- master %>% filter(rural_urban == "Urban")
+N   <- nrow(master)
+T20 <- floor(N * 0.20)
+T10 <- floor(N * 0.10)
 
 ```
 
-
+## Step 2- LSOAs % in worst 20%, each domain, rural vs urban
 ```{r domain_summary}
-# % of LSOAs in worst 20% by domain, rural vs urban
 domain_cols <- c("income_rank","employment_rank","health_rank","education_rank",
                  "access_rank","housing_rank","community_safety_rank","physical_env_rank")
 weights <- c(22,20,15,14,10,9,5,5)
@@ -32,8 +34,8 @@ map2_dfr(domain_cols, weights, function(col, w) {
   tibble(
     domain             = col,
     wimd_weight        = paste0(w, "%"),
-    rural_pct_worst20  = round(100 * mean(rural[[col]] <= 383, na.rm=TRUE), 1),
-    urban_pct_worst20  = round(100 * mean(urban[[col]] <= 383, na.rm=TRUE), 1),
+    rural_pct_worst20  = round(100 * mean(rural[[col]] <= T20, na.rm=TRUE), 1),
+    urban_pct_worst20  = round(100 * mean(urban[[col]] <= T20, na.rm=TRUE), 1),
     rural_median       = median(rural[[col]], na.rm=TRUE),
     urban_median       = median(urban[[col]], na.rm=TRUE),
     rural_worse        = median(rural[[col]], na.rm=TRUE) <
@@ -43,6 +45,7 @@ map2_dfr(domain_cols, weights, function(col, w) {
 
 ```
 
+## Step 3- Detail of Access domain
 ```{r access_domain}
 master %>%
   group_by(rural_urban) %>%
@@ -56,7 +59,7 @@ master %>%
 
 ```
 
-
+## Step 4: Rural : worst 10% access vs rest, overall rank differ?
 ```{r access_invisible}
 master %>%
   filter(rural_urban == "Rural") %>%
@@ -73,9 +76,8 @@ master %>%
 
 ```
 
-
-
-```{r housing_domain}
+## Step 5- Detail of housing domain
+```{r domain_housing}
 master %>%
   group_by(rural_urban) %>%
   summarise(
@@ -84,10 +86,9 @@ master %>%
     pct_worst_20 = round(100 * mean(housing_rank <= 383, na.rm=TRUE), 1),
     .groups = "drop"
   )
-
-
 ```
 
+## Step 6- Rural : worst 10% access vs rest, overall rank differ?
 ```{r housing_rank_gap}
 
 master %>%
@@ -101,14 +102,14 @@ master %>%
 
 ```
 
-
+## Step 7- Housing deprivation in 4 local authorities
 ```{r housing_by_la}
 master %>%
   filter(la_name %in% c("Powys","Ceredigion","Pembrokeshire","Swansea")) %>%
   group_by(la_name) %>%
   summarise(
     n              = n(),
-    pct_worst20    = round(100 * mean(housing_rank <= 383, na.rm=TRUE), 1),
+    pct_worst20    = round(100 * mean(housing_rank <= T20, na.rm=TRUE), 1),
     median_housing = median(housing_rank, na.rm=TRUE),
     .groups = "drop"
   ) %>% arrange(pct_worst20)
@@ -116,7 +117,7 @@ master %>%
 
 ```
 
-
+## Step 8- Income, employment domain for comparision
 ```{r income_employment}
 master %>%
   group_by(rural_urban) %>%
@@ -124,26 +125,23 @@ master %>%
     n                      = n(),
     median_income_rank     = median(income_rank,     na.rm=TRUE),
     median_employment_rank = median(employment_rank, na.rm=TRUE),
-    pct_worst20_income     = round(100 * mean(income_rank     <= 383, na.rm=TRUE), 1),
-    pct_worst20_employment = round(100 * mean(employment_rank <= 383, na.rm=TRUE), 1),
+    pct_worst20_income     = round(100 * mean(income_rank     <= T20, na.rm=TRUE), 1),
+    pct_worst20_employment = round(100 * mean(employment_rank <= T20, na.rm=TRUE), 1),
     .groups = "drop"
   )
 
-
 ```
 
-
+## Step 9- Income track the overall rank than access rank 
 ```{r income_masking}
-cat("Within rural LSOAs — correlation of overall WIMD rank with:\n")
-cat("  Income rank:", round(cor(rural$wimd_2025_rank, rural$income_rank,
-                                use="complete.obs"), 3), "\n")
-cat("  Access rank:", round(cor(rural$wimd_2025_rank, rural$access_rank,
-                                use="complete.obs"), 3), "\n")
-
+cat("Within rural LSOAs — Spearman correlation of overall WIMD rank with:\n")
+cat("  Income rank:", round(cor(rural$wimd_2025_rank, rural$income_rank, 
+method = "spearman",                              use="complete.obs"), 3), "\n")
+cat("  Access rank:", round(cor(rural$wimd_2025_rank, rural$access_rank, method = "spearman",                             use="complete.obs"), 3), "\n")
 
 ```
 
-
+## Step 10- four domains
 ```{r remaining_domain}
 map2_dfr(
   c("health_rank","education_rank","community_safety_rank","physical_env_rank"),
@@ -154,15 +152,16 @@ map2_dfr(
       wimd_weight       = paste0(w, "%"),
       rural_median      = median(rural[[col]], na.rm=TRUE),
       urban_median      = median(urban[[col]], na.rm=TRUE),
-      rural_pct_worst20 = round(100 * mean(rural[[col]] <= 383, na.rm=TRUE), 1),
-      urban_pct_worst20 = round(100 * mean(urban[[col]] <= 383, na.rm=TRUE), 1)
+      rural_pct_worst20 = round(100 * mean(rural[[col]] <= T20, na.rm=TRUE), 1),
+      urban_pct_worst20 = round(100 * mean(urban[[col]] <= T20, na.rm=TRUE), 1)
     )
   })
 
 ```
 
-
-```{r weight_gap_summary}
+## Step 11- Weight- gap summary 
+```{r weight_gap}
+# 
 tibble(
   domain      = domain_cols,
   wimd_weight = weights,
