@@ -90,8 +90,7 @@ Here recomputing of all results and final charts are produced from master datase
 - Apply rural lens check to any policy that solely depend on the overall WIMD rank
 - Report at small area level within local authorities , so town good access doesnot average away a rural poor access( as seen in Ceredigion)
 
-
-# Reproducing Analysis
+## Reproducing Analysis
 
 1. Clone repository
 ```bash 
@@ -111,10 +110,10 @@ Open `WIMD-Rural-deprivation-wales.Rproj` in RStudio
 — double-click the `.Rproj` file itself, not just the folder and 
 run: ```r source("Run_all.R") ``` This runs all 11 scripts in sequence, create master dataset, produce charts
 
-# Environment
+## Environment
 Built in **R / RStudio** for data cleaning,analysis and visualization, version-controlled with **Git/GitHub**.
 
-# Required R packages
+## Required R packages
 install.packages("tidyverse")
 install.packages("readODS")
 install.packages("janitor")
@@ -122,7 +121,7 @@ install.packages("scales")
 install.packages("rmarkdown")
 install.packages("here")
 
-**Structure of Repository**
+## Structure of Repository
 ``` 
 WIMD-Rural-deprivation-wales/
 ├── README.md
