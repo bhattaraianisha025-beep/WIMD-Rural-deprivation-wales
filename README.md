@@ -4,7 +4,8 @@
 ## Project Background
 
 Wales Index of Multiple Deprivation(WIMD) is a official statistics used by Welsh Government for policy and funding.It ranks all 1917 small areas(LSOAs) in wales from 1 (most deprived) to 1917 (least deprived)
-This project examine whether WIMD 2025 combines its eight deprivation domain adequately capture deprivation in rural Welsh communities, and examines the implications for rural-proofing policy in Wales. It is produced as part of a 10-week professional placement with Rural Health Compass (RHC).This analysis doesnot question accuracy of WIMD’s underlying domain data. WIMD DOMAIN rank are official goverment statistics
+This project examine whether WIMD 2025 combines its eight deprivation domain adequately capture deprivation in rural Welsh communities, and examines the implications for rural-proofing policy in Wales. It is produced as part of a 10-week professional placement with Rural Health Compass (RHC).
+This analysis doesnot question accuracy of WIMD’s underlying data. It examines a design choice within the methodology, explores how the eight WIMD domains are weighted, and what that design choice means for how rural deprivation is seen.
 
 ## Project Details
 
@@ -42,6 +43,7 @@ All four datasets are included in `data/raw/`.Confirm dataset from below sources
 | WIMD 2025 — index and domain scores | Welsh Government | [GOV.WALES](https://www.gov.wales/welsh-index-multiple-deprivation-2025)|
 | WIMD 2025 — deep-rooted deprivation data | Welsh Government | [GOV.WALES](https://www.gov.wales/welsh-index-multiple-deprivation-2025)|
 | Rural Urban Classification 2021, LSOAs in England & Wales | [ONS Open Geography Portal](https://geoportal.statistics.gov.uk/datasets/ons::rural-urban-classification-2021-of-lsoas-in-ew/explore)|
+
 All © Crown copyright and database right, Open Government Licence v3.0, aggregate-level (LSOA), and contains no individual or identifiable information.
 
 ## Constraints (per Welsh Government):
