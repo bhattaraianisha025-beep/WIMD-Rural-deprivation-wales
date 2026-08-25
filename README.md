@@ -94,7 +94,8 @@ Here recomputing of all results and final charts are produced from master datase
 1. Clone repository
 ```bash 
 git clone https://github.com/bhattaraianisha025-beep/WIMD-Rural-deprivation-wales.git
-cd WIMD-Rural-deprivation-wales```
+cd WIMD-Rural-deprivation-wales
+``` 
 
 2. Add raw datasets
 Raw data included in: "data/raw/" using filenames:
@@ -120,7 +121,7 @@ install.packages("rmarkdown")
 install.packages("here")
 
 **Structure of Repository**
-```
+``` 
 WIMD-Rural-deprivation-wales/
 ├── README.md
 ├── LICENSE                          # CC-BY-4.0 — data, figures, report text
@@ -156,7 +157,7 @@ WIMD-Rural-deprivation-wales/
 │
 └── Presentation for Rural Health compass/
     └── Final Presentation for Rural Health Compass.pptx
-```
+``` 
 
 ## Ethics and Data Governance
 
