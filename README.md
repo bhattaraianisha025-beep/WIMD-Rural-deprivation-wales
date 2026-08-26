@@ -37,8 +37,8 @@ To evaluate whether WIMD 2025 domain weighting structure adequately capture rura
 
 All four datasets are included in `data/raw/`.Confirm dataset from below sources:
 
-| Dataset | Provider | Licence | Link |
-|---|---|---|---|
+| Dataset | Provider | Link |
+|---|---|---|
 | WIMD 2025 — index and domain ranks | Welsh Government | [GOV.WALES](https://www.gov.wales/welsh-index-multiple-deprivation-2025)|
 | WIMD 2025 — index and domain scores | Welsh Government | [GOV.WALES](https://www.gov.wales/welsh-index-multiple-deprivation-2025)|
 | WIMD 2025 — deep-rooted deprivation data | Welsh Government | [GOV.WALES](https://www.gov.wales/welsh-index-multiple-deprivation-2025)|
